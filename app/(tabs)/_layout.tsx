@@ -1,33 +1,92 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
+import { Tabs } from "expo-router";
+import React, { useEffect } from "react";
+import { Platform, Text } from "react-native";
+import Animated, {
+    useAnimatedStyle,
+    useSharedValue,
+    withSequence,
+    withSpring,
+} from "react-native-reanimated";
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
+  const scale = useSharedValue(1);
+  const translateY = useSharedValue(0);
+
+  useEffect(() => {
+    if (focused) {
+      scale.value = withSequence(
+        withSpring(1.28, { damping: 8, stiffness: 350 }),
+        withSpring(1, { damping: 14, stiffness: 250 }),
+      );
+      translateY.value = withSequence(
+        withSpring(-4, { damping: 10, stiffness: 400 }),
+        withSpring(0, { damping: 14, stiffness: 250 }),
+      );
+    } else {
+      scale.value = withSpring(1, { damping: 14, stiffness: 250 });
+      translateY.value = withSpring(0, { damping: 14, stiffness: 250 });
+    }
+  }, [focused]);
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }, { translateY: translateY.value }],
+  }));
+
+  return (
+    <Animated.View style={animStyle}>
+      <Text style={{ fontSize: 22 }}>{emoji}</Text>
+    </Animated.View>
+  );
+}
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
+        tabBarActiveTintColor: "#00c8ff",
+        tabBarInactiveTintColor: "#8899aa",
+        tabBarStyle: {
+          backgroundColor: "rgba(6,13,31,0.97)",
+          borderTopColor: "rgba(0,200,255,0.2)",
+          borderTopWidth: 1,
+          height: 82,
+          paddingTop: 8,
+          paddingBottom: Platform.OS === "ios" ? 24 : 12,
+        },
+        tabBarLabelStyle: {
+          fontSize: 10,
+          letterSpacing: 1,
+          marginTop: 4,
+        },
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: "HOME",
+          tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" focused={focused} />,
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="chapters"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: "CHAPTERS",
+          tabBarIcon: ({ focused }) => <TabIcon emoji="🗺️" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="ranks"
+        options={{
+          title: "RANKS",
+          tabBarIcon: ({ focused }) => <TabIcon emoji="🏆" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "PROFILE",
+          tabBarIcon: ({ focused }) => <TabIcon emoji="👤" focused={focused} />,
         }}
       />
     </Tabs>
