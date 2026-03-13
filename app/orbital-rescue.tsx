@@ -1,3 +1,4 @@
+import { useCountdown } from "@/hooks/use-countdown";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -22,6 +23,7 @@ import Animated, {
     withDelay,
     withRepeat,
     withSequence,
+    withSpring,
     withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -92,6 +94,11 @@ export default function OrbitalRescueScreen() {
   const [force, setForce] = useState("4000");
   const [time, setTime] = useState("5");
   const [showError, setShowError] = useState(false);
+  const [hearts, setHearts] = useState(3);
+  const [showGameOver, setShowGameOver] = useState(false);
+  const { formatted: timerDisplay } = useCountdown(180, () =>
+    setShowGameOver(true),
+  );
   const forceNum = parseFloat(force) || 0;
   const timeNum = parseFloat(time) || 0;
   const impulse = Math.round(forceNum * timeNum);
@@ -106,6 +113,8 @@ export default function OrbitalRescueScreen() {
   const stationSc = useSharedValue(1);
   const stationGlowOp = useSharedValue(0.35);
   const velArrowOp = useSharedValue(0.7);
+  const fireBtnScale = useSharedValue(1);
+  const resultShakeX = useSharedValue(0);
 
   useEffect(() => {
     // Rocket gentle float
@@ -215,6 +224,12 @@ export default function OrbitalRescueScreen() {
   const velArrowStyle = useAnimatedStyle(() => ({
     opacity: velArrowOp.value,
   }));
+  const fireBtnStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: fireBtnScale.value }],
+  }));
+  const resultShakeStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: resultShakeX.value }],
+  }));
 
   return (
     <View style={s.container}>
@@ -238,7 +253,7 @@ export default function OrbitalRescueScreen() {
         <View style={s.topStats}>
           <View style={s.topStatItem}>
             <Text style={s.topStatLabel}>TIME</Text>
-            <Text style={s.topStatVal}>01:24</Text>
+            <Text style={s.topStatVal}>{timerDisplay}</Text>
           </View>
           <View style={s.topStatItem}>
             <Text style={s.topStatLabel}>FUEL</Text>
@@ -247,8 +262,14 @@ export default function OrbitalRescueScreen() {
           <View style={s.topStatItem}>
             <Text style={s.topStatLabel}>HEARTS</Text>
             <View style={s.heartsRow}>
-              <Text style={s.heartFull}>{"\u2764\uFE0F"}</Text>
-              <Text style={s.heartFull}>{"\u2764\uFE0F"}</Text>
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Text
+                  key={i}
+                  style={[s.heartFull, i >= hearts && { opacity: 0.2 }]}
+                >
+                  {"❤️"}
+                </Text>
+              ))}
             </View>
           </View>
         </View>
@@ -298,7 +319,7 @@ export default function OrbitalRescueScreen() {
             <Text style={s.briefTitle}>MISSION BRIEF</Text>
             <Text style={s.briefLine}>Spacecraft mass: 2,000 kg</Text>
             <Text style={s.briefLine}>Current velocity: 5 m/s</Text>
-            <Text style={s.briefLine}>Target {"\u0394"}p: ???</Text>
+            <Text style={s.briefLine}>Target J: 20,000 N·s</Text>
           </View>
 
           {/* Momentum display — on top */}
@@ -356,7 +377,9 @@ export default function OrbitalRescueScreen() {
             <Text style={s.eqOp}>=</Text>
             <View style={s.eqField}>
               <Text style={s.eqLabel}>IMPULSE</Text>
-              <View style={[s.eqInput, s.eqInputResult]}>
+              <Animated.View
+                style={[s.eqInput, s.eqInputResult, resultShakeStyle]}
+              >
                 <Text
                   style={[
                     s.eqValue,
@@ -373,7 +396,7 @@ export default function OrbitalRescueScreen() {
                 >
                   N{"\u00B7"}s
                 </Text>
-              </View>
+              </Animated.View>
             </View>
           </View>
 
@@ -391,21 +414,42 @@ export default function OrbitalRescueScreen() {
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={() => {
+              fireBtnScale.value = withSequence(
+                withSpring(0.93, { damping: 12, stiffness: 300 }),
+                withSpring(1, { damping: 8, stiffness: 200 }),
+              );
               if (impulseCorrect) {
                 router.push("/results");
               } else {
-                setShowError(true);
+                resultShakeX.value = withSequence(
+                  withTiming(7, { duration: 55 }),
+                  withTiming(-7, { duration: 55 }),
+                  withTiming(7, { duration: 55 }),
+                  withTiming(-7, { duration: 55 }),
+                  withTiming(0, { duration: 55 }),
+                );
+                const newHearts = hearts - 1;
+                setHearts(newHearts);
+                if (newHearts <= 0) {
+                  setShowGameOver(true);
+                } else {
+                  setShowError(true);
+                }
               }
             }}
           >
-            <LinearGradient
-              colors={["#ffa827", "#e67e00"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              style={s.fireBtn}
-            >
-              <Text style={s.fireBtnText}>FIRE THRUSTERS {"\uD83D\uDE80"}</Text>
-            </LinearGradient>
+            <Animated.View style={fireBtnStyle}>
+              <LinearGradient
+                colors={["#ffa827", "#e67e00"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={s.fireBtn}
+              >
+                <Text style={s.fireBtnText}>
+                  FIRE THRUSTERS {"\uD83D\uDE80"}
+                </Text>
+              </LinearGradient>
+            </Animated.View>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -417,7 +461,7 @@ export default function OrbitalRescueScreen() {
             <Text style={s.modalIcon}>{"\u274C"}</Text>
             <Text style={s.modalTitle}>INCORRECT IMPULSE</Text>
             <Text style={s.modalBody}>
-              {`Target: 20,000 N\u00B7s\nYour result: ${impulse.toLocaleString()} N\u00B7s\n\nAdjust FORCE \u00D7 TIME to reach the target.`}
+              {`Target: 20,000 N\u00B7s\nYour result: ${impulse.toLocaleString()} N\u00B7s\n\nAdjust FORCE \u00D7 TIME to reach the target.\n\nHearts remaining: ${hearts}`}
             </Text>
             <TouchableOpacity
               style={s.modalBtn}
@@ -425,6 +469,28 @@ export default function OrbitalRescueScreen() {
               onPress={() => setShowError(false)}
             >
               <Text style={s.modalBtnText}>TRY AGAIN</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Game Over Modal ── */}
+      <Modal visible={showGameOver} transparent animationType="fade">
+        <View style={s.modalOverlay}>
+          <View style={s.modalBox}>
+            <Text style={s.modalIcon}>{"\uD83D\uDC94"}</Text>
+            <Text style={s.modalTitle}>MISSION FAILED</Text>
+            <Text style={s.modalBody}>
+              {hearts <= 0
+                ? "You ran out of hearts!\nStudy the formula: J = F \u00D7 \u0394t"
+                : "Time's up! The crew couldn't be rescued.\nRemember: J = F \u00D7 \u0394t = 20,000 N\u00B7s"}
+            </Text>
+            <TouchableOpacity
+              style={s.modalBtn}
+              activeOpacity={0.8}
+              onPress={() => router.replace("/(tabs)")}
+            >
+              <Text style={s.modalBtnText}>RETURN TO BASE</Text>
             </TouchableOpacity>
           </View>
         </View>

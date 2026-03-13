@@ -108,7 +108,11 @@ export default function OnboardingScreen() {
             <Text style={s.nextBtnText}>NEXT →</Text>
           </LinearGradient>
         </TouchableOpacity>
-        <TouchableOpacity activeOpacity={0.7} style={{ marginTop: sh(12) }}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          style={{ marginTop: sh(12) }}
+          onPress={() => router.replace("/login" as any)}
+        >
           <Text style={s.footerText}>
             Already have an account? <Text style={s.footerLink}>LOG IN</Text>
           </Text>

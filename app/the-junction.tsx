@@ -1,3 +1,4 @@
+import { useCountdown } from "@/hooks/use-countdown";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -31,6 +32,11 @@ export default function TheJunctionScreen() {
   );
   const [vFinalInput, setVFinalInput] = useState("");
   const [showError, setShowError] = useState(false);
+  const [hearts, setHearts] = useState(3);
+  const [showGameOver, setShowGameOver] = useState(false);
+  const { formatted: timerDisplay } = useCountdown(150, () =>
+    setShowGameOver(true),
+  );
 
   const m1 = 1500,
     v1 = 8,
@@ -73,13 +79,19 @@ export default function TheJunctionScreen() {
         <View style={s.topStats}>
           <View style={s.topStatItem}>
             <Text style={s.topStatLabel}>TIME</Text>
-            <Text style={s.topStatVal}>02:30</Text>
+            <Text style={s.topStatVal}>{timerDisplay}</Text>
           </View>
           <View style={s.topStatItem}>
             <Text style={s.topStatLabel}>HEARTS</Text>
             <View style={s.heartsRow}>
-              <Text style={s.heartFull}>{"\u2764\uFE0F"}</Text>
-              <Text style={s.heartFull}>{"\u2764\uFE0F"}</Text>
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Text
+                  key={i}
+                  style={[s.heartFull, i >= hearts && { opacity: 0.2 }]}
+                >
+                  {"❤️"}
+                </Text>
+              ))}
             </View>
           </View>
         </View>
@@ -253,7 +265,14 @@ export default function TheJunctionScreen() {
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={() =>
-              isAnswerCorrect ? router.push("/results") : setShowError(true)
+              isAnswerCorrect
+                ? router.push("/results")
+                : (() => {
+                    const newHearts = hearts - 1;
+                    setHearts(newHearts);
+                    if (newHearts <= 0) setShowGameOver(true);
+                    else setShowError(true);
+                  })()
             }
           >
             <LinearGradient
@@ -276,7 +295,8 @@ export default function TheJunctionScreen() {
             <Text style={s.modalTitle}>INCORRECT v_final</Text>
             <Text style={s.modalBody}>
               Target: {correctVf.toFixed(1)} m/s{"\n"}
-              Your answer: {vFinalInput || "\u2014"} m/s
+              Your answer: {vFinalInput || "\u2014"} m/s{"\n\n"}
+              Hearts remaining: {hearts}
             </Text>
             <TouchableOpacity
               style={s.modalBtn}
@@ -284,6 +304,28 @@ export default function TheJunctionScreen() {
               onPress={() => setShowError(false)}
             >
               <Text style={s.modalBtnText}>TRY AGAIN</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Game Over Modal */}
+      <Modal visible={showGameOver} transparent animationType="fade">
+        <View style={s.modalOverlay}>
+          <View style={s.modalBox}>
+            <Text style={s.modalIcon}>{"\uD83D\uDC94"}</Text>
+            <Text style={s.modalTitle}>MISSION FAILED</Text>
+            <Text style={s.modalBody}>
+              {hearts <= 0
+                ? "No hearts left!\nFormula: p_before = p_after"
+                : "Time's up! Train collision not solved.\nFor inelastic: v_f = p_total / (m\u2081+m\u2082)"}
+            </Text>
+            <TouchableOpacity
+              style={s.modalBtn}
+              activeOpacity={0.8}
+              onPress={() => router.replace("/(tabs)")}
+            >
+              <Text style={s.modalBtnText}>RETURN TO BASE</Text>
             </TouchableOpacity>
           </View>
         </View>

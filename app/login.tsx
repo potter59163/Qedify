@@ -4,8 +4,6 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
     Dimensions,
-    Image,
-    ImageStyle,
     Platform,
     ScrollView,
     StyleSheet,
@@ -21,9 +19,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const { width: W, height: H } = Dimensions.get("window");
 const sw = (n: number) => (n / 388) * W;
 const sh = (n: number) => (n / 812) * H;
-
-const GOOGLE_ICON =
-  "https://www.figma.com/api/mcp/asset/71615ca6-5cfa-41ba-8c34-42ed39a586a9";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -110,12 +105,14 @@ export default function LoginScreen() {
 
         {/* ── Google button ── */}
         <FadeSlideIn delay={330}>
-          <TouchableOpacity activeOpacity={0.8} style={s.googleBtn}>
-            <Image
-              source={{ uri: GOOGLE_ICON }}
-              style={s.googleIcon}
-              resizeMode="contain"
-            />
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={s.googleBtn}
+            onPress={() => router.replace("/(tabs)")}
+          >
+            <View style={s.googleIconCircle}>
+              <Text style={s.googleIconText}>G</Text>
+            </View>
             <Text style={s.googleText}>Continue with Google</Text>
           </TouchableOpacity>
         </FadeSlideIn>
@@ -299,9 +296,18 @@ const s = StyleSheet.create<Styles>({
     gap: sw(8),
     marginBottom: sh(28),
   },
-  googleIcon: {
-    width: sw(21),
-    height: sw(22),
+  googleIconCircle: {
+    width: sw(24),
+    height: sw(24),
+    borderRadius: sw(12),
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  googleIconText: {
+    fontSize: sw(14),
+    fontWeight: "bold",
+    color: "#4285F4",
   },
   googleText: {
     fontSize: sw(14),

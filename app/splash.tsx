@@ -13,8 +13,7 @@ import {
 
 const { width: W, height: H } = Dimensions.get("window");
 
-const WORLD_IMG =
-  "https://www.figma.com/api/mcp/asset/4a9c2d91-a3db-41ad-b3a2-bee43513f213";
+const WORLD_IMG = require("../assets/images/world.png");
 
 // Design reference: 388 x 812 frame
 const sw = (n: number) => (n / 388) * W;
@@ -64,7 +63,7 @@ export default function SplashScreen() {
         <View style={styles.globeGlow} />
         {/* World image overlay */}
         <Image
-          source={{ uri: WORLD_IMG }}
+          source={WORLD_IMG}
           style={styles.worldImage}
           resizeMode="cover"
         />

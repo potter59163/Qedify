@@ -18,6 +18,8 @@ import Animated, {
     runOnJS,
     useAnimatedStyle,
     useSharedValue,
+    withSequence,
+    withSpring,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -118,12 +120,101 @@ function InteractiveSlider({
   );
 }
 
+const MCQ_OPTIONS = [
+  { label: "A", text: "16.7 kg·m/s" },
+  { label: "B", text: "530 kg·m/s" },
+  { label: "C", text: "15,000 kg·m/s" },
+  { label: "D", text: "6,000 kg·m/s" },
+];
+
+function MCQOption({
+  opt,
+  i,
+  selectedOption,
+  CORRECT_IDX,
+  quizPassed,
+  onSelect,
+}: {
+  opt: { label: string; text: string };
+  i: number;
+  selectedOption: number | null;
+  CORRECT_IDX: number;
+  quizPassed: boolean;
+  onSelect: (i: number) => void;
+}) {
+  const scale = useSharedValue(1);
+  const isSelected = selectedOption === i;
+  const isCorrect = i === CORRECT_IDX;
+  const answered = selectedOption !== null;
+
+  let borderColor = "rgba(0,200,255,0.2)";
+  let bgColor = "rgba(10,22,40,0.8)";
+  let textColor = "#e8f4ff";
+  if (answered) {
+    if (isSelected && isCorrect) {
+      borderColor = "#00ff9f";
+      bgColor = "rgba(0,255,159,0.12)";
+      textColor = "#00ff9f";
+    } else if (isSelected && !isCorrect) {
+      borderColor = "#ff4757";
+      bgColor = "rgba(255,71,87,0.12)";
+      textColor = "#ff4757";
+    } else if (!isSelected && isCorrect) {
+      borderColor = "rgba(0,255,159,0.4)";
+      bgColor = "rgba(0,255,159,0.05)";
+      textColor = "#00ff9f";
+    }
+  }
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePress = () => {
+    scale.value = withSequence(
+      withSpring(0.92, { damping: 14, stiffness: 300 }),
+      withSpring(1, { damping: 10, stiffness: 200 }),
+    );
+    onSelect(i);
+  };
+
+  return (
+    <TouchableOpacity
+      activeOpacity={1}
+      onPress={handlePress}
+      disabled={quizPassed}
+    >
+      <Animated.View
+        style={[
+          s.mcqOption,
+          { borderColor, backgroundColor: bgColor },
+          animStyle,
+        ]}
+      >
+        <View style={[s.mcqLabel, { borderColor }]}>
+          <Text style={[s.mcqLabelText, { color: textColor }]}>
+            {opt.label}
+          </Text>
+        </View>
+        <Text style={[s.mcqText, { color: textColor }]}>{opt.text}</Text>
+        {answered && isCorrect && <Text style={s.mcqCheck}>✓</Text>}
+        {answered && isSelected && !isCorrect && (
+          <Text style={s.mcqCross}>✕</Text>
+        )}
+      </Animated.View>
+    </TouchableOpacity>
+  );
+}
+
 export default function TutorialScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [mass, setMass] = useState(600);
   const [velocity, setVelocity] = useState(8);
   const momentum = mass * velocity;
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const CORRECT_IDX = 2;
+  const quizPassed = selectedOption === CORRECT_IDX;
 
   return (
     <View style={s.container}>
@@ -247,18 +338,56 @@ export default function TutorialScreen() {
           </Text>
         </View>
 
+        {/* ── Mission Check: MCQ ── */}
+        <View style={s.card}>
+          <Text style={s.cardTitle}>🎯 MISSION CHECK</Text>
+          <Text style={s.mcqQuestion}>
+            A rocket of mass <Text style={s.bold}>500 kg</Text> accelerates to{" "}
+            <Text style={s.bold}>30 m/s</Text>.{"\n"}
+            What is its momentum?
+          </Text>
+          <View style={s.mcqOptions}>
+            {MCQ_OPTIONS.map((opt, i) => (
+              <MCQOption
+                key={i}
+                opt={opt}
+                i={i}
+                selectedOption={selectedOption}
+                CORRECT_IDX={CORRECT_IDX}
+                quizPassed={quizPassed}
+                onSelect={setSelectedOption}
+              />
+            ))}
+          </View>
+          {selectedOption !== null && !quizPassed && (
+            <Text style={s.mcqHint}>
+              ❗ Not quite! Use p = m × v: 500 × 30 = 15,000 kg·m/s
+            </Text>
+          )}
+          {quizPassed && (
+            <Text style={s.mcqSuccess}>
+              ✓ Correct! Ready for the next mission.
+            </Text>
+          )}
+        </View>
+
         {/* ── Continue Button ── */}
         <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={() => router.push("/orbital-rescue")}
+          activeOpacity={quizPassed ? 0.85 : 1}
+          onPress={() => {
+            if (quizPassed) router.push("/orbital-rescue");
+          }}
+          style={{ opacity: quizPassed ? 1 : 0.4 }}
         >
           <LinearGradient
-            colors={["#00c8ff", "#0d4eaa"]}
+            colors={quizPassed ? ["#00c8ff", "#0d4eaa"] : ["#334", "#223"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
             style={s.continueBtn}
           >
-            <Text style={s.continueBtnText}>NEXT: Impulse → CONTINUE</Text>
+            <Text style={s.continueBtnText}>
+              {quizPassed ? "NEXT MISSION →" : "ANSWER THE QUIZ TO CONTINUE"}
+            </Text>
           </LinearGradient>
         </TouchableOpacity>
       </ScrollView>
@@ -615,5 +744,65 @@ const s = StyleSheet.create({
     fontSize: sw(14),
     color: "#ffffff",
     letterSpacing: 1,
+  } as TextStyle,
+
+  /* ── MCQ Quiz ── */
+  mcqQuestion: {
+    fontSize: sw(14),
+    color: "#e8f4ff",
+    lineHeight: sw(22),
+    marginBottom: sw(16),
+  } as TextStyle,
+  mcqOptions: {
+    gap: sw(10),
+  } as ViewStyle,
+  mcqOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: sw(12),
+    paddingVertical: sw(12),
+    paddingHorizontal: sw(14),
+    gap: sw(10),
+  } as ViewStyle,
+  mcqLabel: {
+    width: sw(26),
+    height: sw(26),
+    borderRadius: sw(13),
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  } as ViewStyle,
+  mcqLabelText: {
+    fontFamily: FONT_MONO,
+    fontSize: sw(12),
+    fontWeight: "bold",
+  } as TextStyle,
+  mcqText: {
+    flex: 1,
+    fontSize: sw(14),
+  } as TextStyle,
+  mcqCheck: {
+    fontSize: sw(16),
+    color: "#00ff9f",
+    fontWeight: "bold",
+  } as TextStyle,
+  mcqCross: {
+    fontSize: sw(16),
+    color: "#ff4757",
+    fontWeight: "bold",
+  } as TextStyle,
+  mcqHint: {
+    fontSize: sw(12),
+    color: "#ffa827",
+    marginTop: sw(12),
+    lineHeight: sw(20),
+  } as TextStyle,
+  mcqSuccess: {
+    fontSize: sw(13),
+    color: "#00ff9f",
+    fontWeight: "bold",
+    marginTop: sw(12),
+    textAlign: "center",
   } as TextStyle,
 });

@@ -2,10 +2,9 @@ import { FadeSlideIn } from "@/components/fade-slide-in";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
 import {
     Dimensions,
-    Image,
-    ImageStyle,
     Platform,
     ScrollView,
     StyleSheet,
@@ -15,29 +14,49 @@ import {
     View,
     ViewStyle,
 } from "react-native";
+import Animated, {
+    Easing,
+    useAnimatedStyle,
+    useSharedValue,
+    withRepeat,
+    withSequence,
+    withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width: W } = Dimensions.get("window");
 const sw = (n: number) => (n / 388) * W;
-
-const FIRE_IMG =
-  "https://www.figma.com/api/mcp/asset/f6e8cac2-2ccc-41ab-b8b8-590b0349e95f";
-const HEART_IMG =
-  "https://www.figma.com/api/mcp/asset/d42c411e-3a95-43c6-9ada-293c00e231b6";
-const ROCKET_IMG =
-  "https://www.figma.com/api/mcp/asset/88ef8a9e-c336-4729-827d-d3b3fb20cddd";
 
 type MissionNode = {
   label: string;
   stars: number;
   maxStars: number;
   status: "complete" | "current" | "locked" | "boss";
+  route?: string;
 };
 
 const MISSIONS: MissionNode[] = [
-  { label: "p = mv Basics", stars: 3, maxStars: 3, status: "complete" },
-  { label: "Vector Forces", stars: 2, maxStars: 3, status: "complete" },
-  { label: "Orbital Rescue", stars: 0, maxStars: 3, status: "current" },
+  {
+    label: "p = mv Basics",
+    stars: 3,
+    maxStars: 3,
+    status: "complete",
+    route: "/tutorial",
+  },
+  {
+    label: "Vector Forces",
+    stars: 2,
+    maxStars: 3,
+    status: "complete",
+    route: "/tutorial",
+  },
+  {
+    label: "Orbital Rescue",
+    stars: 0,
+    maxStars: 3,
+    status: "current",
+    route: "/orbital-rescue",
+  },
   { label: "The Junction", stars: 0, maxStars: 3, status: "locked" },
   { label: "Crash Test", stars: 0, maxStars: 3, status: "locked" },
   { label: "BOSS: Crisis Protocol", stars: 0, maxStars: 0, status: "boss" },
@@ -46,6 +65,25 @@ const MISSIONS: MissionNode[] = [
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const hour = new Date().getHours();
+  const greeting =
+    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+
+  // Pulsing scale for the current mission node
+  const nodePulse = useSharedValue(1);
+  useEffect(() => {
+    nodePulse.value = withRepeat(
+      withSequence(
+        withTiming(1.1, { duration: 750, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0.9, { duration: 750, easing: Easing.inOut(Easing.sin) }),
+      ),
+      -1,
+      true,
+    );
+  }, []);
+  const nodePulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: nodePulse.value }],
+  }));
 
   return (
     <View style={s.container}>
@@ -57,29 +95,20 @@ export default function HomeScreen() {
         {/* ── Header ── */}
         <FadeSlideIn delay={0}>
           <View style={[s.header, { paddingTop: insets.top + 14 }]}>
-            <Text style={s.greeting}>Good morning, Cadet 👋</Text>
+            <Text style={s.greeting}>{greeting}, Cadet 👋</Text>
             <Text style={s.userName}>Pariphat R.</Text>
 
-            {/* Stat pills */}
             <View style={s.statsRow}>
               <View style={s.statPill}>
                 <Text style={s.statEmoji}>⚡</Text>
                 <Text style={s.statValue}>1,240 XP</Text>
               </View>
               <View style={s.statPill}>
-                <Image
-                  source={{ uri: FIRE_IMG }}
-                  style={s.statIcon}
-                  resizeMode="cover"
-                />
+                <Text style={[s.statEmoji, { color: "#ffa827" }]}>🔥</Text>
                 <Text style={[s.statValue, { color: "#ffa827" }]}>7day</Text>
               </View>
               <View style={s.statPill}>
-                <Image
-                  source={{ uri: HEART_IMG }}
-                  style={s.statIcon}
-                  resizeMode="cover"
-                />
+                <Text style={[s.statEmoji, { color: "#ff4757" }]}>❤️</Text>
                 <Text style={[s.statValue, { color: "#ff4757" }]}>4/5</Text>
               </View>
             </View>
@@ -139,7 +168,9 @@ export default function HomeScreen() {
                     style={s.missionNodeWrap}
                     activeOpacity={tappable ? 0.7 : 1}
                     onPress={
-                      tappable ? () => router.push("/tutorial") : undefined
+                      tappable && m.route
+                        ? () => router.push(m.route as any)
+                        : undefined
                     }
                   >
                     {i > 0 && (
@@ -167,13 +198,11 @@ export default function HomeScreen() {
                         <Text style={s.nodeCheck}>✓</Text>
                       </LinearGradient>
                     ) : m.status === "current" ? (
-                      <View style={s.nodeCircleCurrent}>
-                        <Image
-                          source={{ uri: ROCKET_IMG }}
-                          style={s.rocketIcon}
-                          resizeMode="contain"
-                        />
-                      </View>
+                      <Animated.View
+                        style={[s.nodeCircleCurrent, nodePulseStyle]}
+                      >
+                        <Text style={{ fontSize: sw(22) }}>🚀</Text>
+                      </Animated.View>
                     ) : m.status === "boss" ? (
                       <View style={s.nodeCircleBoss}>
                         <Text style={s.nodeEmoji}>💀</Text>

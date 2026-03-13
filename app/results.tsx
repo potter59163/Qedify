@@ -2,6 +2,7 @@ import { FadeSlideIn } from "@/components/fade-slide-in";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useEffect, useState } from "react";
 import {
     Dimensions,
     Platform,
@@ -13,6 +14,12 @@ import {
     View,
     ViewStyle,
 } from "react-native";
+import Animated, {
+    useAnimatedStyle,
+    useSharedValue,
+    withDelay,
+    withSpring,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width: W } = Dimensions.get("window");
@@ -23,6 +30,51 @@ const FONT_MONO = Platform.OS === "ios" ? "Courier New" : "monospace";
 export default function ResultsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+
+  // ── Star pop-in ──
+  const star1Scale = useSharedValue(0);
+  const star2Scale = useSharedValue(0);
+  const star3Scale = useSharedValue(0);
+
+  // ── XP count-up ──
+  const [displayXP, setDisplayXP] = useState(0);
+
+  useEffect(() => {
+    // Staggered spring pop-in for each star
+    star1Scale.value = withDelay(
+      220,
+      withSpring(1, { damping: 5, stiffness: 180 }),
+    );
+    star2Scale.value = withDelay(
+      380,
+      withSpring(1, { damping: 5, stiffness: 180 }),
+    );
+    star3Scale.value = withDelay(
+      540,
+      withSpring(1, { damping: 5, stiffness: 180 }),
+    );
+
+    // XP count-up starting at 350ms
+    const startAt = Date.now() + 350;
+    const tick = setInterval(() => {
+      const now = Date.now();
+      if (now < startAt) return;
+      const t = Math.min((now - startAt) / 1400, 1);
+      setDisplayXP(Math.round((1 - Math.pow(1 - t, 3)) * 320));
+      if (t >= 1) clearInterval(tick);
+    }, 16);
+    return () => clearInterval(tick);
+  }, []);
+
+  const star1Style = useAnimatedStyle(() => ({
+    transform: [{ scale: star1Scale.value }],
+  }));
+  const star2Style = useAnimatedStyle(() => ({
+    transform: [{ scale: star2Scale.value }],
+  }));
+  const star3Style = useAnimatedStyle(() => ({
+    transform: [{ scale: star3Scale.value }],
+  }));
 
   return (
     <View style={s.container}>
@@ -43,9 +95,15 @@ export default function ResultsScreen() {
         {/* ── Stars ── */}
         <FadeSlideIn delay={200} offsetY={0}>
           <View style={s.starsRow}>
-            <Text style={s.starFull}>{"\u2605"}</Text>
-            <Text style={s.starFull}>{"\u2605"}</Text>
-            <Text style={s.starFull}>{"\u2605"}</Text>
+            <Animated.Text style={[s.starFull, star1Style]}>
+              {"\u2605"}
+            </Animated.Text>
+            <Animated.Text style={[s.starFull, star2Style]}>
+              {"\u2605"}
+            </Animated.Text>
+            <Animated.Text style={[s.starFull, star3Style]}>
+              {"\u2605"}
+            </Animated.Text>
           </View>
         </FadeSlideIn>
 
@@ -54,7 +112,7 @@ export default function ResultsScreen() {
           <View style={s.statsCard}>
             <View style={s.statCol}>
               <Text style={s.statLabel}>XP EARNED</Text>
-              <Text style={s.statValueCyan}>+320 XP</Text>
+              <Text style={s.statValueCyan}>+{displayXP} XP</Text>
             </View>
             <View style={s.statCol}>
               <Text style={s.statLabel}>ACCURACY</Text>

@@ -28,6 +28,7 @@ type Chapter = {
   difficulty: number;
   difficultyColor: string;
   statusColor: string;
+  route?: string;
 };
 
 const CHAPTERS: Chapter[] = [
@@ -42,6 +43,7 @@ const CHAPTERS: Chapter[] = [
     difficulty: 1,
     difficultyColor: "#00ff9f",
     statusColor: "#00ff9f",
+    route: "/tutorial",
   },
   {
     number: 2,
@@ -54,6 +56,7 @@ const CHAPTERS: Chapter[] = [
     difficulty: 2,
     difficultyColor: "#00c8ff",
     statusColor: "#00c8ff",
+    route: "/orbital-rescue",
   },
   {
     number: 3,
@@ -65,6 +68,7 @@ const CHAPTERS: Chapter[] = [
     difficulty: 0,
     difficultyColor: "rgba(100,120,150,0.3)",
     statusColor: "#ffa827",
+    route: "/the-junction",
   },
   {
     number: 4,
@@ -124,7 +128,7 @@ export default function ChaptersScreen() {
                 style={s.cardOuter}
                 {...(!isLocked && {
                   activeOpacity: 0.85,
-                  onPress: () => router.push("/tutorial"),
+                  onPress: () => router.push((ch.route ?? "/tutorial") as any),
                 })}
               >
                 {ch.status === "complete" ? (
