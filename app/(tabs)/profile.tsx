@@ -1,8 +1,8 @@
 import { FadeSlideIn } from "@/components/fade-slide-in";
+import { getPhoneFrameWindow } from "@/constants/device-frame";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import {
-    Dimensions,
     Platform,
     ScrollView,
     StyleSheet,
@@ -20,7 +20,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const { width: W } = Dimensions.get("window");
+const { width: W } = getPhoneFrameWindow();
 const sw = (n: number) => (n / 388) * W;
 
 const FONT_MONO = Platform.OS === "ios" ? "Courier New" : "monospace";

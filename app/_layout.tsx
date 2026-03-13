@@ -3,9 +3,14 @@ import {
     DefaultTheme,
     ThemeProvider,
 } from "@react-navigation/native";
+import {
+  getPhoneFrameHeight,
+  isDesktopWebViewport,
+  PHONE_FRAME_WIDTH,
+} from "@/constants/device-frame";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { Platform, StyleSheet, useWindowDimensions, View } from "react-native";
+import { StyleSheet, useWindowDimensions, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 
@@ -18,8 +23,8 @@ export const unstable_settings = {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const { width, height } = useWindowDimensions();
-  const isDesktopWeb = Platform.OS === "web" && width >= 900;
-  const phoneHeight = Math.min(844, Math.max(680, height - 48));
+  const isDesktopWeb = isDesktopWebViewport(width);
+  const phoneHeight = getPhoneFrameHeight(height);
 
   const appNavigator = (
     <Stack>
@@ -85,7 +90,7 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
   phoneFrame: {
-    width: 390,
+    width: PHONE_FRAME_WIDTH,
     maxWidth: "92%",
     borderRadius: 40,
     overflow: "hidden",

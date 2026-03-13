@@ -1,10 +1,10 @@
 import { useCountdown } from "@/hooks/use-countdown";
+import { getPhoneFrameWindow } from "@/constants/device-frame";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
-    Dimensions,
     Modal,
     Platform,
     ScrollView,
@@ -18,7 +18,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const { width: W } = Dimensions.get("window");
+const { width: W } = getPhoneFrameWindow();
 const sw = (n: number) => (n / 388) * W;
 
 const FONT_MONO = Platform.OS === "ios" ? "Courier New" : "monospace";

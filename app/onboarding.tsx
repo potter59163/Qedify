@@ -1,8 +1,8 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { getPhoneFrameWindow } from "@/constants/device-frame";
 import {
-    Dimensions,
     Image,
     ImageStyle,
     Platform,
@@ -22,7 +22,7 @@ import {
 // Outer: paddingTop=60, paddingLeft=28, paddingBottom=40
 // Illustration section (flex:1 in design): 413.812px
 // Bottom panel: 298.188px
-const { width: W, height: H } = Dimensions.get("window");
+const { width: W, height: H } = getPhoneFrameWindow();
 const sw = (n: number) => (n / 388) * W;
 const sh = (n: number) => (n / 812) * H;
 

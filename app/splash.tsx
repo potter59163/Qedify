@@ -1,9 +1,9 @@
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef } from "react";
+import { getPhoneFrameWindow } from "@/constants/device-frame";
 import {
     Animated,
-    Dimensions,
     Image,
     Platform,
     StyleSheet,
@@ -11,7 +11,7 @@ import {
     View,
 } from "react-native";
 
-const { width: W, height: H } = Dimensions.get("window");
+  const { width: W, height: H } = getPhoneFrameWindow();
 
 const WORLD_IMG = require("../assets/images/world.png");
 
