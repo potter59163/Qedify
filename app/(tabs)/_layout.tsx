@@ -1,6 +1,7 @@
 import { Tabs } from "expo-router";
 import React, { useEffect } from "react";
-import { Platform, Text } from "react-native";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { Platform } from "react-native";
 import Animated, {
     useAnimatedStyle,
     useSharedValue,
@@ -8,7 +9,17 @@ import Animated, {
     withSpring,
 } from "react-native-reanimated";
 
-function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
+type MaterialIconName = React.ComponentProps<typeof MaterialIcons>["name"];
+
+function TabIcon({
+  name,
+  color,
+  focused,
+}: {
+  name: MaterialIconName;
+  color: string;
+  focused: boolean;
+}) {
   const scale = useSharedValue(1);
   const translateY = useSharedValue(0);
 
@@ -34,7 +45,7 @@ function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
 
   return (
     <Animated.View style={animStyle}>
-      <Text style={{ fontSize: 22 }}>{emoji}</Text>
+      <MaterialIcons name={name} size={22} color={color} />
     </Animated.View>
   );
 }
@@ -65,28 +76,36 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "HOME",
-          tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" focused={focused} />,
+          tabBarIcon: ({ focused, color }) => (
+            <TabIcon name="home" color={color} focused={focused} />
+          ),
         }}
       />
       <Tabs.Screen
         name="chapters"
         options={{
           title: "CHAPTERS",
-          tabBarIcon: ({ focused }) => <TabIcon emoji="🗺️" focused={focused} />,
+          tabBarIcon: ({ focused, color }) => (
+            <TabIcon name="menu-book" color={color} focused={focused} />
+          ),
         }}
       />
       <Tabs.Screen
         name="ranks"
         options={{
           title: "RANKS",
-          tabBarIcon: ({ focused }) => <TabIcon emoji="🏆" focused={focused} />,
+          tabBarIcon: ({ focused, color }) => (
+            <TabIcon name="military-tech" color={color} focused={focused} />
+          ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: "PROFILE",
-          tabBarIcon: ({ focused }) => <TabIcon emoji="👤" focused={focused} />,
+          tabBarIcon: ({ focused, color }) => (
+            <TabIcon name="person" color={color} focused={focused} />
+          ),
         }}
       />
     </Tabs>

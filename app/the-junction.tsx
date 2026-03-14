@@ -23,6 +23,102 @@ const sw = (n: number) => (n / 388) * W;
 
 const FONT_MONO = Platform.OS === "ios" ? "Courier New" : "monospace";
 
+// ── Learning Engine: Chapter 3 = fewer hints (2 max vs 3 in Ch.2) ──
+// Higher chapter = less scaffolding = learner should recall prior knowledge
+const MAX_HINTS = 2;
+
+const JUNCTION_HINTS = [
+  "HINT 1/2  Formula recall (Chapter 2 connects here)\n\nFrom Chapter 2 you learned: p = m \u00D7 v\n\nFor INELASTIC collision:\n  v_f = p_total \u00F7 (m1 + m2)\n\nFor ELASTIC collision:\n  v2f = (2\u00D7m1 / (m1+m2)) \u00D7 v1",
+  "HINT 2/2  Worked numbers\n\np_total = 1500 \u00D7 8 = 12,000 kg\u00B7m/s\nTotal mass = 1500 + 1000 = 2,500 kg\n\nINELASTIC: v_f = 12,000 \u00F7 2,500 = 4.8 m/s\nELASTIC: v2f = (2\u00D7 1500 / 2500) \u00D7 8 = 9.6 m/s",
+];
+
+// ── Misconception Detection by Learning Outcome ──
+function getJunctionMisconception(
+  userVf: number,
+  correctVf: number,
+  collisionType: "inelastic" | "elastic",
+  attempts: number,
+  pTotal: number,
+  totalMass: number,
+  m1: number,
+  m2: number,
+  v1: number,
+): { title: string; body: string } {
+  if (isNaN(userVf)) {
+    return {
+      title: "NO ANSWER ENTERED",
+      body: "Type the final velocity in m/s.\n\n\uD83D\uDD2C LO: You must apply the conservation law\nto find the unknown velocity.",
+    };
+  }
+
+  const inelasticAns = pTotal / totalMass;
+  const elasticAns = (2 * m1 / totalMass) * v1;
+
+  if (collisionType === "inelastic" && Math.abs(userVf - elasticAns) < 0.3) {
+    return {
+      title: "WRONG COLLISION FORMULA",
+      body: "You applied the ELASTIC formula for an INELASTIC collision!\n\n\uD83D\uDD2C Misconception: These formulas are different.\nINELASTIC (stick): v_f = p_total \u00F7 (m1+m2)\nELASTIC (bounce): v2f = (2m1/(m1+m2)) \u00D7 v1",
+    };
+  }
+  if (collisionType === "elastic" && Math.abs(userVf - inelasticAns) < 0.3) {
+    return {
+      title: "WRONG COLLISION FORMULA",
+      body: "You applied the INELASTIC formula for an ELASTIC collision!\n\n\uD83D\uDD2C Misconception: Elastic collisions bounce apart.\nv2f = (2\u00D7m1 / (m1+m2)) \u00D7 v1",
+    };
+  }
+
+  if (Math.abs(userVf - pTotal / m1) < 0.3) {
+    return {
+      title: "WRONG DENOMINATOR",
+      body: "You divided by m1 only, but after collision\nboth trains move together!\n\n\uD83D\uDD2C For inelastic: divide by COMBINED mass.\n\nv_f = p_total \u00F7 (m1 + m2) = 12,000 \u00F7 2,500",
+    };
+  }
+  if (Math.abs(userVf - pTotal / m2) < 0.3) {
+    return {
+      title: "WRONG DENOMINATOR",
+      body: "You divided by m2 only.\n\n\uD83D\uDD2C Use TOTAL combined mass: (m1 + m2) = 2,500 kg\n\nv_f = 12,000 \u00F7 2,500 = 4.8 m/s",
+    };
+  }
+
+  if (userVf > v1) {
+    return {
+      title: "EXCEEDS INITIAL VELOCITY",
+      body: "Final velocity can't be greater than v1 = 8 m/s!\n\n\uD83D\uDD2C LO: The stationary train absorbs momentum,\nso the moving train must slow down after collision.",
+    };
+  }
+
+  if (userVf < 0) {
+    return {
+      title: "NEGATIVE VELOCITY",
+      body: "Both trains travel in the same direction after collision.\n\n\uD83D\uDD2C Check your direction convention.\nFinal velocities here are positive.",
+    };
+  }
+
+  const diff = Math.abs(userVf - correctVf);
+  if (diff < 1.5) {
+    return {
+      title: "ALMOST CORRECT!",
+      body: `Off by only ${diff.toFixed(2)} m/s — check arithmetic.\n\nTarget: ${correctVf.toFixed(2)} m/s\nYours: ${userVf.toFixed(2)} m/s\n\nTip: use exact fractions before rounding.`,
+    };
+  }
+
+  if (attempts >= 2) {
+    const formula =
+      collisionType === "inelastic"
+        ? `v_f = p_total \u00F7 (m1+m2)\n    = 12,000 \u00F7 2,500 = 4.8 m/s`
+        : `v2f = (2\u00D7m1/(m1+m2)) \u00D7 v1\n    = (3000/2500) \u00D7 8 = 9.6 m/s`;
+    return {
+      title: "STILL INCORRECT",
+      body: `Use HINT button for formula help.\n\n${formula}\n\nYours: ${userVf.toFixed(2)} m/s`,
+    };
+  }
+
+  return {
+    title: "INCORRECT v_final",
+    body: `Target: ${correctVf.toFixed(2)} m/s\nYours: ${userVf.toFixed(2)} m/s\n\nApply momentum conservation:\np_before = p_after\n\nCheck you selected the right collision type.`,
+  };
+}
+
 export default function TheJunctionScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -34,13 +130,18 @@ export default function TheJunctionScreen() {
   const [showError, setShowError] = useState(false);
   const [hearts, setHearts] = useState(3);
   const [showGameOver, setShowGameOver] = useState(false);
+
+  // ── Learning scaffolding state (Chapter 3 = harder, less upfront help) ──
+  const [attempts, setAttempts] = useState(0);
+  const [hintsRemaining, setHintsRemaining] = useState(MAX_HINTS);
+  const [hintLevel, setHintLevel] = useState(0);
+  const [showHintModal, setShowHintModal] = useState(false);
+
   const { formatted: timerDisplay } = useCountdown(150, () =>
     setShowGameOver(true),
   );
 
-  const m1 = 1500,
-    v1 = 8,
-    m2 = 1000;
+  const m1 = 1500, v1 = 8, m2 = 1000;
   const pTotal = m1 * v1;
   const totalMass = m1 + m2;
   const correctVf =
@@ -56,6 +157,23 @@ export default function TheJunctionScreen() {
     : collisionType === "inelastic"
       ? totalMass * userVf
       : m1 * ((m1 - m2) / totalMass) * v1 + m2 * userVf;
+
+  // Pre-compute misconception feedback so modal JSX stays clean
+  const errorFeedback = getJunctionMisconception(userVf, correctVf, collisionType, Math.max(0, attempts - 1), pTotal, totalMass, m1, m2, v1);
+
+  const computeStars = () => {
+    if (attempts === 0 && hintsRemaining === MAX_HINTS) return 3;
+    if (attempts <= 1 || hintsRemaining >= 1) return 2;
+    return 1;
+  };
+
+  const handleHintPress = () => {
+    if (hintsRemaining <= 0) return;
+    const nextLevel = hintLevel + 1;
+    setHintLevel(nextLevel);
+    setHintsRemaining((prev) => prev - 1);
+    setShowHintModal(true);
+  };
 
   return (
     <View style={s.container}>
@@ -103,6 +221,14 @@ export default function TheJunctionScreen() {
       >
         {/* ── Collision Scene ── */}
         <View style={s.scene}>
+          {/* Prior knowledge reminder — links to Chapter 2 content (constructivism) */}
+          <View style={s.priorKnowledgeBanner}>
+            <Text style={s.priorKnowledgeText}>
+              {"\uD83D\uDD17"} Builds on Ch.2: p = m{"\u00D7"}v (Impulse &
+              Forces)
+            </Text>
+          </View>
+
           {/* Conservation Check */}
           <View style={s.conserveCard}>
             <Text style={s.conserveTitle}>CONSERVATION CHECK</Text>
@@ -137,7 +263,6 @@ export default function TheJunctionScreen() {
               </Text>
             </View>
 
-            {/* Collision point */}
             <View style={s.collisionJunction}>
               <View style={s.junctionCircle}>
                 <Text style={s.junctionText}>J</Text>
@@ -158,7 +283,7 @@ export default function TheJunctionScreen() {
             <Text
               style={[s.unknownText, isAnswerCorrect && { color: "#00ff9f" }]}
             >
-              {collisionType === "elastic" ? "v\u2082f" : "v_f"} ={" "}
+              {collisionType === "elastic" ? "v2f" : "v_f"} ={" "}
               {vFinalInput || "???"}
             </Text>
           </View>
@@ -239,7 +364,7 @@ export default function TheJunctionScreen() {
           {/* v_final input */}
           <View style={s.vfInputWrap}>
             <Text style={s.eqLabel}>
-              YOUR ANSWER: {collisionType === "elastic" ? "v\u2082f" : "v_f"}{" "}
+              YOUR ANSWER: {collisionType === "elastic" ? "v2f" : "v_f"}{" "}
               (m/s)
             </Text>
             <View
@@ -261,19 +386,102 @@ export default function TheJunctionScreen() {
             </View>
           </View>
 
+          {/* Hint button (Chapter 3: only 2 hints — less support than Chapter 2) */}
+          <View style={s.hintRow}>
+            <TouchableOpacity
+              style={[s.hintBtn, hintsRemaining === 0 && s.hintBtnDisabled]}
+              activeOpacity={hintsRemaining > 0 ? 0.7 : 1}
+              onPress={handleHintPress}
+            >
+              <Text style={[s.hintBtnText, hintsRemaining === 0 && s.hintBtnTextDisabled]}>
+                {"\uD83D\uDCA1"} HINT ({hintsRemaining} left)
+              </Text>
+            </TouchableOpacity>
+            <Text style={s.hintNote}>Ch.3: fewer hints</Text>
+          </View>
+
+          {/* ── Scaffolding Card (appears only after attempt 2 — harder threshold than Ch.2) ── */}
+          {attempts >= 2 && (
+            <View style={s.scaffoldCard}>
+              <Text style={s.scaffoldTitle}>
+                {"\uD83D\uDCCB"} SCAFFOLD (unlocked after 2 wrong attempts)
+              </Text>
+              <Text style={s.scaffoldStep}>
+                1{"\u25B8"} p_before = m1{"\u00D7"}v1 = 1500{"\u00D7"}8 = 12,000
+              </Text>
+              <Text style={s.scaffoldStep}>
+                2{"\u25B8"} Momentum conserved: p_before = p_after
+              </Text>
+              {collisionType === "inelastic" ? (
+                <>
+                  <Text style={s.scaffoldStep}>
+                    3{"\u25B8"} INELASTIC: v_f = p_total {"\u00F7"} (m1+m2)
+                  </Text>
+                  <Text style={s.scaffoldStep}>
+                    4{"\u25B8"} v_f = 12,000 {"\u00F7"} 2,500 = ?
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text style={s.scaffoldStep}>
+                    3{"\u25B8"} ELASTIC: v2f = (2m1/(m1+m2)) {"\u00D7"} v1
+                  </Text>
+                  <Text style={s.scaffoldStep}>
+                    4{"\u25B8"} v2f = (3000/2500) {"\u00D7"} 8 = ?
+                  </Text>
+                </>
+              )}
+              {attempts >= 3 && (
+                <Text style={[s.scaffoldStep, s.scaffoldExample]}>
+                  {"\uD83D\uDD0D"} Answer:{" "}
+                  {collisionType === "inelastic" ? "4.8 m/s" : "9.6 m/s"}{" "}
+                  {"\u2713"}
+                </Text>
+              )}
+            </View>
+          )}
+
           {/* Calculate button */}
           <TouchableOpacity
             activeOpacity={0.85}
-            onPress={() =>
-              isAnswerCorrect
-                ? router.push("/results")
-                : (() => {
-                    const newHearts = hearts - 1;
-                    setHearts(newHearts);
-                    if (newHearts <= 0) setShowGameOver(true);
-                    else setShowError(true);
-                  })()
-            }
+            onPress={() => {
+              if (isAnswerCorrect) {
+                const stars = computeStars();
+                const xp = stars === 3 ? 380 : stars === 2 ? 240 : 140;
+                const hintsUsed = MAX_HINTS - hintsRemaining;
+                const accuracy =
+                  attempts === 0
+                    ? 100
+                    : Math.max(40, Math.round(100 - attempts * 15));
+                router.push({
+                  pathname: "/results",
+                  params: {
+                    missionId: "the-junction",
+                    missionName: "The Junction",
+                    chapter: "Chapter 3",
+                    stars: String(stars),
+                    xp: String(xp),
+                    accuracy: String(accuracy),
+                    attempts: String(attempts),
+                    hintsUsed: String(hintsUsed),
+                    maxHints: String(MAX_HINTS),
+                    lo1: collisionType === "inelastic" ? "mastered" : "partial",
+                    lo2: attempts <= 1 ? "mastered" : "partial",
+                    lo3:
+                      hintsUsed === 0 && attempts === 0
+                        ? "mastered"
+                        : "partial",
+                  },
+                });
+              } else {
+                const newAttempts = attempts + 1;
+                setAttempts(newAttempts);
+                const newHearts = hearts - 1;
+                setHearts(newHearts);
+                if (newHearts <= 0) setShowGameOver(true);
+                else setShowError(true);
+              }
+            }}
           >
             <LinearGradient
               colors={["#00c8ff", "#0d4eaa"]}
@@ -287,16 +495,15 @@ export default function TheJunctionScreen() {
         </View>
       </ScrollView>
 
-      {/* Error Modal */}
+      {/* ── Error Modal (Misconception-targeted feedback) ── */}
       <Modal visible={showError} transparent animationType="fade">
         <View style={s.modalOverlay}>
           <View style={s.modalBox}>
             <Text style={s.modalIcon}>{"\u26A0\uFE0F"}</Text>
-            <Text style={s.modalTitle}>INCORRECT v_final</Text>
-            <Text style={s.modalBody}>
-              Target: {correctVf.toFixed(1)} m/s{"\n"}
-              Your answer: {vFinalInput || "\u2014"} m/s{"\n\n"}
-              Hearts remaining: {hearts}
+            <Text style={s.modalTitle}>{errorFeedback.title}</Text>
+            <Text style={s.modalBody}>{errorFeedback.body}</Text>
+            <Text style={s.modalHearts}>
+              Hearts remaining: {hearts} {hearts > 0 ? "❤️" : "💔"}
             </Text>
             <TouchableOpacity
               style={s.modalBtn}
@@ -309,7 +516,29 @@ export default function TheJunctionScreen() {
         </View>
       </Modal>
 
-      {/* Game Over Modal */}
+      {/* ── Hint Modal ── */}
+      <Modal visible={showHintModal} transparent animationType="fade">
+        <View style={s.modalOverlay}>
+          <View style={[s.modalBox, s.hintModalBox]}>
+            <Text style={s.hintModalIcon}>{"\uD83D\uDCA1"}</Text>
+            <Text style={s.hintModalTitle}>SCAFFOLDING HINT</Text>
+            <Text style={s.hintModalBody}>
+              {hintLevel > 0 ? JUNCTION_HINTS[hintLevel - 1] : ""}
+            </Text>
+            <TouchableOpacity
+              style={[s.modalBtn, s.hintModalBtn]}
+              activeOpacity={0.8}
+              onPress={() => setShowHintModal(false)}
+            >
+              <Text style={[s.modalBtnText, { color: "#00c8ff" }]}>
+                GOT IT {"\u2192"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Game Over Modal ── */}
       <Modal visible={showGameOver} transparent animationType="fade">
         <View style={s.modalOverlay}>
           <View style={s.modalBox}>
@@ -317,8 +546,8 @@ export default function TheJunctionScreen() {
             <Text style={s.modalTitle}>MISSION FAILED</Text>
             <Text style={s.modalBody}>
               {hearts <= 0
-                ? "No hearts left!\nFormula: p_before = p_after"
-                : "Time's up! Train collision not solved.\nFor inelastic: v_f = p_total / (m\u2081+m\u2082)"}
+                ? "No hearts left!\n\nReview Chapter 2 (Impulse) first,\nthen apply momentum conservation:\np_before = p_after\n\nFor inelastic: v_f = p_total \u00F7 (m1+m2)"
+                : "Time's up! Train collision not solved.\n\nRemember:\np_before = p_after (conservation law)\nFor inelastic: v_f = 12,000 \u00F7 2,500 = 4.8 m/s"}
             </Text>
             <TouchableOpacity
               style={s.modalBtn}
@@ -348,6 +577,8 @@ type Styles = {
   heartsRow: ViewStyle;
   heartFull: TextStyle;
   scene: ViewStyle;
+  priorKnowledgeBanner: ViewStyle;
+  priorKnowledgeText: TextStyle;
   conserveCard: ViewStyle;
   conserveTitle: TextStyle;
   conserveRow: ViewStyle;
@@ -388,13 +619,29 @@ type Styles = {
   vfInputWrap: ViewStyle;
   vfInputBox: ViewStyle;
   vfInputField: TextStyle;
+  hintRow: ViewStyle;
+  hintBtn: ViewStyle;
+  hintBtnDisabled: ViewStyle;
+  hintBtnText: TextStyle;
+  hintBtnTextDisabled: TextStyle;
+  hintNote: TextStyle;
+  scaffoldCard: ViewStyle;
+  scaffoldTitle: TextStyle;
+  scaffoldStep: TextStyle;
+  scaffoldExample: TextStyle;
   modalOverlay: ViewStyle;
   modalBox: ViewStyle;
   modalIcon: TextStyle;
   modalTitle: TextStyle;
   modalBody: TextStyle;
+  modalHearts: TextStyle;
   modalBtn: ViewStyle;
   modalBtnText: TextStyle;
+  hintModalBox: ViewStyle;
+  hintModalIcon: TextStyle;
+  hintModalTitle: TextStyle;
+  hintModalBody: TextStyle;
+  hintModalBtn: ViewStyle;
 };
 
 const s = StyleSheet.create<Styles>({
@@ -444,6 +691,26 @@ const s = StyleSheet.create<Styles>({
     paddingHorizontal: sw(16),
     paddingTop: sw(16),
   },
+
+  /* Prior Knowledge Banner (Constructivism link) */
+  priorKnowledgeBanner: {
+    backgroundColor: "rgba(91,69,224,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(91,69,224,0.2)",
+    borderRadius: sw(8),
+    paddingVertical: sw(7),
+    paddingHorizontal: sw(12),
+    marginBottom: sw(12),
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  priorKnowledgeText: {
+    fontFamily: FONT_MONO,
+    fontSize: sw(10),
+    color: "#a78bfa",
+    letterSpacing: 0.5,
+  },
+
   conserveCard: {
     backgroundColor: "rgba(0,200,255,0.06)",
     borderWidth: 1,
@@ -636,17 +903,71 @@ const s = StyleSheet.create<Styles>({
     fontWeight: "bold",
     letterSpacing: 1,
   },
-  vfInputWrap: {
+  vfInputWrap: { marginBottom: sw(16) },
+  vfInputBox: { marginTop: sw(4) },
+  vfInputField: { flex: 1, padding: 0, margin: 0 },
+
+  /* Hint Row */
+  hintRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: sw(12),
+    marginBottom: sw(14),
+  },
+  hintBtn: {
+    backgroundColor: "rgba(255,168,39,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(255,168,39,0.3)",
+    borderRadius: sw(8),
+    paddingVertical: sw(8),
+    paddingHorizontal: sw(14),
+  },
+  hintBtnDisabled: {
+    backgroundColor: "rgba(136,153,170,0.08)",
+    borderColor: "rgba(136,153,170,0.2)",
+  },
+  hintBtnText: {
+    fontFamily: FONT_MONO,
+    fontSize: sw(10),
+    color: "#ffa827",
+    letterSpacing: 1,
+  },
+  hintBtnTextDisabled: { color: "#556677" },
+  hintNote: {
+    fontFamily: FONT_MONO,
+    fontSize: sw(9),
+    color: "#556677",
+    fontStyle: "italic",
+  },
+
+  /* Scaffolding Card */
+  scaffoldCard: {
+    backgroundColor: "rgba(91,69,224,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(91,69,224,0.25)",
+    borderRadius: sw(10),
+    padding: sw(14),
     marginBottom: sw(16),
   },
-  vfInputBox: {
+  scaffoldTitle: {
+    fontFamily: FONT_MONO,
+    fontSize: sw(9),
+    color: "#a78bfa",
+    letterSpacing: 1,
+    marginBottom: sw(8),
+  },
+  scaffoldStep: {
+    fontFamily: FONT_MONO,
+    fontSize: sw(12),
+    color: "#c4b5fd",
+    lineHeight: sw(20),
+  },
+  scaffoldExample: {
+    color: "#00ff9f",
     marginTop: sw(4),
   },
-  vfInputField: {
-    flex: 1,
-    padding: 0,
-    margin: 0,
-  },
+
+  /* Modals */
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.75)",
@@ -674,11 +995,17 @@ const s = StyleSheet.create<Styles>({
   },
   modalBody: {
     fontFamily: FONT_MONO,
-    fontSize: sw(13),
+    fontSize: sw(12),
     color: "#e8f4ff",
     textAlign: "center",
-    lineHeight: sw(22),
-    marginBottom: sw(20),
+    lineHeight: sw(20),
+    marginBottom: sw(8),
+  },
+  modalHearts: {
+    fontFamily: FONT_MONO,
+    fontSize: sw(11),
+    color: "#8899aa",
+    marginBottom: sw(16),
   },
   modalBtn: {
     backgroundColor: "rgba(255,168,39,0.15)",
@@ -694,5 +1021,29 @@ const s = StyleSheet.create<Styles>({
     color: "#ffa827",
     fontWeight: "bold",
     letterSpacing: 1,
+  },
+
+  /* Hint Modal */
+  hintModalBox: { borderColor: "rgba(0,200,255,0.4)" },
+  hintModalIcon: { fontSize: sw(32), marginBottom: sw(6) },
+  hintModalTitle: {
+    fontFamily: FONT_MONO,
+    fontSize: sw(11),
+    color: "#00c8ff",
+    letterSpacing: 2,
+    marginBottom: sw(14),
+  },
+  hintModalBody: {
+    fontFamily: FONT_MONO,
+    fontSize: sw(12),
+    color: "#e8f4ff",
+    textAlign: "left",
+    lineHeight: sw(21),
+    marginBottom: sw(20),
+    width: "100%",
+  },
+  hintModalBtn: {
+    backgroundColor: "rgba(0,200,255,0.12)",
+    borderColor: "rgba(0,200,255,0.4)",
   },
 });

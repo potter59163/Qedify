@@ -38,18 +38,29 @@ export default function OnboardingScreen() {
 
   // Actual illustration section height at runtime
   const illustrationH = H - insets.top - insets.bottom - sh(PANEL_DESIGN_H);
+  const centerX = W / 2;
+  const worldW = sw(419);
+  const worldH = sw(228);
+  const glowSize = sw(120);
+  const rocketW = sw(74);
+  const rocketH = sw(107);
 
   // Converts design-space y (relative to 413.812px illustration) to pixels
   const ip = (n: number) => (n / 413.812) * illustrationH;
 
   const pos = {
     worldTop: ip(108),
-    worldLeft: sw(-16),
+    worldLeft: centerX - worldW / 2,
     glowTop: ip(161.91),
+    glowLeft: centerX - glowSize / 2,
     levelUpTop: ip(101.91),
+    levelUpLeft: centerX - sw(130),
     rocketTop: ip(84),
+    rocketLeft: centerX + sw(21),
     formulaTop: ip(287.91),
+    formulaLeft: centerX - sw(110),
     xpTop: ip(315.91),
+    xpLeft: centerX + sw(58),
   };
 
   return (
@@ -57,24 +68,51 @@ export default function OnboardingScreen() {
       <StatusBar style="light" />
 
       <View style={s.illustration}>
-        <View style={[s.globeGlow, { top: pos.glowTop }]} />
+        <View
+          style={[
+            s.globeGlow,
+            {
+              top: pos.glowTop,
+              left: pos.glowLeft,
+              width: glowSize,
+              height: glowSize,
+              borderRadius: glowSize / 2,
+            },
+          ]}
+        />
         <Image
           source={WORLD_IMG}
-          style={[s.worldImage, { top: pos.worldTop, left: pos.worldLeft }]}
+          style={[
+            s.worldImage,
+            {
+              top: pos.worldTop,
+              left: pos.worldLeft,
+              width: worldW,
+              height: worldH,
+            },
+          ]}
           resizeMode="cover"
         />
-        <View style={[s.levelUpBadge, { top: pos.levelUpTop }]}>
+        <View style={[s.levelUpBadge, { top: pos.levelUpTop, left: pos.levelUpLeft }]}>
           <Text style={s.levelUpText}>⭐ LEVEL UP</Text>
         </View>
         <Image
           source={ROCKET_IMG}
-          style={[s.rocketImage, { top: pos.rocketTop }]}
+          style={[
+            s.rocketImage,
+            {
+              top: pos.rocketTop,
+              left: pos.rocketLeft,
+              width: rocketW,
+              height: rocketH,
+            },
+          ]}
           resizeMode="contain"
         />
-        <View style={[s.formulaWrap, { top: pos.formulaTop }]}>
-          <Text style={s.formulaText}>p⃗ = mv</Text>
+        <View style={[s.formulaWrap, { top: pos.formulaTop, left: pos.formulaLeft }]}>
+          <Text style={s.formulaText}>p = m x v</Text>
         </View>
-        <View style={[s.xpBadge, { top: pos.xpTop }]}>
+        <View style={[s.xpBadge, { top: pos.xpTop, left: pos.xpLeft }]}>
           <Text style={s.xpText}>+250 XP</Text>
         </View>
       </View>
@@ -155,14 +193,10 @@ const s = StyleSheet.create<Styles>({
 
   illustration: { flex: 1, overflow: "hidden" },
 
-  worldImage: { position: "absolute", width: sw(419), height: sw(228) },
+  worldImage: { position: "absolute" },
 
   globeGlow: {
     position: "absolute",
-    left: sw(134),
-    width: sw(120),
-    height: sw(120),
-    borderRadius: sw(60),
     backgroundColor: "#0a4a9e",
     shadowColor: "#00c8ff",
     shadowOffset: { width: 0, height: 0 },
@@ -173,7 +207,6 @@ const s = StyleSheet.create<Styles>({
 
   levelUpBadge: {
     position: "absolute",
-    left: sw(64),
     height: sw(36),
     paddingHorizontal: sw(16),
     justifyContent: "center",
@@ -195,12 +228,9 @@ const s = StyleSheet.create<Styles>({
 
   rocketImage: {
     position: "absolute",
-    left: sw(215),
-    width: sw(74),
-    height: sw(107),
   },
 
-  formulaWrap: { position: "absolute", left: sw(84) },
+  formulaWrap: { position: "absolute" },
   formulaText: {
     fontFamily: Platform.OS === "ios" ? "Courier New" : "monospace",
     fontSize: sw(12),
@@ -209,7 +239,6 @@ const s = StyleSheet.create<Styles>({
 
   xpBadge: {
     position: "absolute",
-    left: sw(251.78),
     paddingHorizontal: sw(13),
     paddingVertical: sw(7),
     backgroundColor: "rgba(0,255,213,0.08)",
