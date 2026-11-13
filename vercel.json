@@ -10,6 +10,7 @@
   },
   "cleanUrls": true,
   "trailingSlash": false,
+  "redirects": [{ "source": "/th", "destination": "/", "permanent": false }],
   "headers": [
     {
       "source": "/_expo/static/(.*)",

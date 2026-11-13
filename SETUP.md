@@ -58,7 +58,7 @@ If the site is not served from `https://qedify.vercel.app`, set `EXPO_PUBLIC_SIT
 
 ## Language
 
-The app starts in Thai when the browser language is Thai, otherwise in English. Learners switch in Settings → Language; `/th` opens the Thai landing page and switches the app to Thai.
+The app starts in Thai when the browser language is Thai, otherwise in English. Learners switch on the intro screen (ไทย / EN, top right) or in Settings → Language.
 
 Every learner-facing string is written as `L("English", "ไทย")` (`useL()` in components, `pick(lang)` in the engine). `npm run verify` fails if a mission string has no Thai.
 

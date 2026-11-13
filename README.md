@@ -9,7 +9,8 @@ Learn momentum, impulse and collisions through space-rescue missions. A cross-pl
 - **AI coach powered by Claude**: personalised hints, mission debriefs and learning insights, with built-in rule-based feedback whenever the coach is off or unreachable.
 - **Wrong answers play out**: the feedback dialog simulates what the learner's own answer would do (a ship still moving on contact, a net that tears, momentum that appears from nowhere) without giving the right answer away.
 - **Drag-and-drop vectors**: any answer that is a vector (momentum, impulse, force, velocity) can be set by dragging an arrow; in the lab the velocity arrows in the scene are draggable.
-- **Thai and English**: the whole app, every mission and the AI coach. `/th` is a Thai landing page.
+- **Thai and English**: the whole app, every mission and the AI coach. The language can be switched on the intro screen and in Settings.
+- **Opens like an app**: there is no marketing page. `/` goes straight to the intro on a first visit, and to mission control after that.
 - **Stall prompts and retention checks**: a concept-level prompt appears when the learner stops answering, and cleared missions come back days later with new numbers and no support.
 - **Research tools**: a built-in satisfaction survey for students and teachers, export of every logged answer as JSON or CSV, and a script that aggregates the exports.
 - **Works offline**: after the first visit a service worker serves every page from the device.
@@ -56,4 +57,4 @@ The client never sends a prompt or the player's name to the coach. It sends a ta
 | `npm run build:web` | Pre-renders every page to static HTML in `dist/` |
 | `node scripts/serve-dist.js` | Serves `dist/` locally with the same URL rules as production |
 
-Measured on the production build of both landing pages, `/` and `/th` (Lighthouse, mobile): Accessibility 100, Best Practices 100, SEO 100. An earlier build, before the Thai translation was added, reached a largest contentful paint of 0.7 s under Slow 4G with a 4× CPU slowdown; that trace has not been repeated on the current build. The JavaScript bundle is about 650 kB gzipped.
+Measured on the production build of the intro screen, `/onboarding`, which is where `/` sends a first-time visitor (Lighthouse, mobile): Accessibility 100, Best Practices 100, SEO 100. An earlier build, before the Thai translation was added, reached a largest contentful paint of 0.7 s under Slow 4G with a 4× CPU slowdown; that trace has not been repeated on the current build. The JavaScript bundle is about 650 kB gzipped.

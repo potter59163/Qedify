@@ -8,7 +8,8 @@ import { FadeSlideIn } from "@/components/fade-slide-in";
 import { Icon } from "@/components/icon";
 import { C, MONO } from "@/constants/theme";
 import type { IconName } from "@/lib/engine/types";
-import { useL, type Bi } from "@/lib/i18n";
+import { radioGroup } from "@/lib/a11y";
+import { useL, useLang, type Bi, type Lang } from "@/lib/i18n";
 import { href } from "@/lib/nav";
 import { Seo } from "@/lib/seo";
 import { useGame } from "@/lib/store";
@@ -42,10 +43,17 @@ const SLIDES: { title: Bi; accent: Bi; body: Bi; badge: [IconName, Bi]; formula:
   },
 ];
 
+/** Each language under its own name, so it is readable whichever one is active. */
+const LANGS: [Lang, string][] = [
+  ["th", "ไทย"],
+  ["en", "EN"],
+];
+
 export default function Onboarding() {
   const router = useRouter();
   const { state, dispatch } = useGame();
   const L = useL();
+  const lang = useLang();
   const [i, setI] = useState(0);
   const slide = SLIDES[i];
   const last = i === SLIDES.length - 1;
@@ -64,6 +72,20 @@ export default function Onboarding() {
       />
       <SafeAreaView style={s.safe} edges={["top", "bottom"]}>
         <View role="main" style={s.col}>
+          {/* The first screen a new visitor sees, so the language can be chosen here. */}
+          <View style={s.langRow} {...radioGroup(L("Language", "ภาษา"))}>
+            {LANGS.map(([code, name]) => (
+              <Pressable
+                key={code}
+                onPress={() => dispatch({ type: "settings", patch: { lang: code } })}
+                role="radio"
+                aria-checked={lang === code}
+                style={s.langBtn}
+              >
+                <Text style={[s.langText, lang === code && s.langOn]}>{name}</Text>
+              </Pressable>
+            ))}
+          </View>
           <View style={s.art} aria-hidden>
             <Starfield count={16} />
             <Planet size={230} />
@@ -95,7 +117,7 @@ export default function Onboarding() {
 
             <View style={s.dots}>
               {SLIDES.map((_, k) => (
-                <Pressable key={k} onPress={() => setI(k)} hitSlop={12} accessibilityRole="button" accessibilityLabel={L(`Go to slide ${k + 1}`, `ไปที่สไลด์ ${k + 1}`)}>
+                <Pressable key={k} onPress={() => setI(k)} style={s.dotHit} accessibilityRole="button" accessibilityLabel={L(`Go to slide ${k + 1}`, `ไปที่สไลด์ ${k + 1}`)}>
                   <View style={[s.dot, k === i ? s.dotOn : s.dotOff]} />
                 </Pressable>
               ))}
@@ -116,6 +138,10 @@ export default function Onboarding() {
 const s = StyleSheet.create({
   safe: { flex: 1, alignItems: "center" },
   col: { flex: 1, width: "100%", maxWidth: 520 },
+  langRow: { flexDirection: "row", justifyContent: "flex-end", gap: 4, paddingHorizontal: 12 },
+  langBtn: { minWidth: 48, height: 44, paddingHorizontal: 10, alignItems: "center", justifyContent: "center", borderRadius: 8 },
+  langText: { fontFamily: MONO, fontSize: 13, color: C.muted },
+  langOn: { color: C.cyan, fontWeight: "bold" },
   art: { flex: 1, minHeight: 220, overflow: "hidden", alignItems: "center", justifyContent: "center" },
   rocket: { position: "absolute", top: "12%", right: "20%", transform: [{ rotate: "30deg" }] },
   chip: {
@@ -140,10 +166,12 @@ const s = StyleSheet.create({
   title: { fontSize: 27, fontWeight: "800", color: C.text, lineHeight: 35 },
   accent: { color: C.cyan },
   body: { fontSize: 14.5, color: C.muted, lineHeight: 23, marginTop: 12, minHeight: 92 },
-  dots: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 8, marginBottom: 20 },
+  // Each dot sits in a 44px tap target, so the row is pulled back to where the bare dots were.
+  dots: { flexDirection: "row", alignItems: "center", marginTop: -10, marginBottom: 2, marginLeft: -10 },
+  dotHit: { minWidth: 44, height: 44, alignItems: "center", justifyContent: "center" },
   dot: { height: 8, borderRadius: 4 },
   dotOn: { width: 24, backgroundColor: C.cyan, boxShadow: "0 0 12px rgba(0,200,255,0.6)" },
-  dotOff: { width: 8, backgroundColor: "rgba(0,200,255,0.3)" },
+  dotOff: { width: 8, backgroundColor: C.edge },
   skip: { alignItems: "center", paddingVertical: 14 },
   skipText: { fontSize: 13, color: C.muted },
 });

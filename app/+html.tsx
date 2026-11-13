@@ -2,13 +2,6 @@ import { ScrollViewStyleReset } from "expo-router/html";
 import type { PropsWithChildren } from "react";
 
 /**
- * "/" is always English and "/th" always Thai, so neither page changes
- * language after it is painted. This sends a visitor whose saved setting (or,
- * on a first visit, whose browser) is Thai from "/" to "/th" up front.
- */
-const TO_THAI = `(function(){try{if(location.pathname!=="/")return;var s=localStorage.getItem("qedify:v2");var th=s?/"lang":"th"/.test(s):/^th\\b/i.test(navigator.language||"");if(th)location.replace("/th"+location.search)}catch(e){}})();`;
-
-/**
  * HTML shell for every statically rendered page (web only). Runs in Node at
  * build time, so it must not touch browser or React Native APIs.
  */
@@ -28,8 +21,6 @@ export default function Root({ children }: PropsWithChildren) {
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        {/* Thai visitors opening "/" go to the Thai landing page before anything is painted. */}
-        <script dangerouslySetInnerHTML={{ __html: TO_THAI }} />
         <ScrollViewStyleReset />
         {/* Paint the space background before any script runs, so there is no white flash. */}
         <style dangerouslySetInnerHTML={{ __html: "html,body{background:#060d1f;color-scheme:dark}body{overflow:hidden}" }} />

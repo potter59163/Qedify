@@ -97,7 +97,7 @@ export default function Register() {
               <Icon name="lock" size={13} color={C.muted} />
               <Text style={s.note}>{L("No account needed. Your profile and progress stay on this device.", "ไม่ต้องสมัครบัญชี โปรไฟล์และความคืบหน้าเก็บอยู่ในอุปกรณ์นี้")}</Text>
             </View>
-            <Pressable onPress={() => (router.canGoBack() ? goBack(router) : router.replace(href("/")))} style={s.back} accessibilityRole="button">
+            <Pressable onPress={() => (router.canGoBack() ? goBack(router) : router.replace(href("/onboarding")))} style={s.back} accessibilityRole="button">
               <Text style={s.backText}>{L("Back", "ย้อนกลับ")}</Text>
             </Pressable>
           </View>

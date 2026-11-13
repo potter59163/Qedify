@@ -30,14 +30,6 @@ function walk(dir, base = "") {
   return out;
 }
 
-// The Thai landing page is pre-rendered in Thai, so its document language must say so.
-const thai = path.join(dist, "th.html");
-if (fs.existsSync(thai)) {
-  const html = fs.readFileSync(thai, "utf8");
-  fs.writeFileSync(thai, html.replace(/<html(\s+)lang="en"/, '<html$1lang="th"'));
-  console.log("postbuild: set lang=th on dist/th.html");
-}
-
 // Route-group copies such as (game)/home.html duplicate the public URLs, so they are not precached.
 const SKIP = /(^|\/)(sw\.js|404\.html|\+not-found\.html|_sitemap\.html|robots\.txt|sitemap\.xml)$|\.map$|\(/;
 const files = walk(dist).filter((f) => !SKIP.test(f)).sort();
