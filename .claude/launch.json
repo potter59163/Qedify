@@ -4,8 +4,32 @@
     {
       "name": "expo-web",
       "runtimeExecutable": "cmd",
-      "runtimeArgs": ["/c", "npx expo start --web --port 8081"],
+      "runtimeArgs": [
+        "/c",
+        "npx expo start --web --port 8081"
+      ],
       "port": 8081
+    },
+    {
+      "name": "expo-web-mac",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "expo",
+        "start",
+        "--web",
+        "--port",
+        "8081"
+      ],
+      "port": 8081
+    },
+    {
+      "name": "dist-preview",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/serve-dist.js",
+        "4173"
+      ],
+      "port": 4173
     }
   ]
 }

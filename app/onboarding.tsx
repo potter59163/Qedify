@@ -1,319 +1,149 @@
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { getPhoneFrameWindow } from "@/constants/device-frame";
-import {
-    Image,
-    ImageStyle,
-    Platform,
-    StyleSheet,
-    Text,
-    TextStyle,
-    TouchableOpacity,
-    View,
-    ViewStyle,
-} from "react-native";
-import {
-    SafeAreaView,
-    useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { useState } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-// Design frame: 388 x 812
-// Outer: paddingTop=60, paddingLeft=28, paddingBottom=40
-// Illustration section (flex:1 in design): 413.812px
-// Bottom panel: 298.188px
-const { width: W, height: H } = getPhoneFrameWindow();
-const sw = (n: number) => (n / 388) * W;
-const sh = (n: number) => (n / 812) * H;
+import { Planet, RocketHero } from "@/components/art";
+import { FadeSlideIn } from "@/components/fade-slide-in";
+import { Icon } from "@/components/icon";
+import { C, MONO } from "@/constants/theme";
+import type { IconName } from "@/lib/engine/types";
+import { useL, type Bi } from "@/lib/i18n";
+import { href } from "@/lib/nav";
+import { Seo } from "@/lib/seo";
+import { useGame } from "@/lib/store";
+import { Text } from "@/lib/text";
+import { Btn, Screen, Starfield } from "@/lib/ui";
 
-const WORLD_IMG = require("../assets/images/world.png");
-const ROCKET_IMG = require("../assets/images/rocket.png");
+const SLIDES: { title: Bi; accent: Bi; body: Bi; badge: [IconName, Bi]; formula: string; chip: [IconName, Bi] }[] = [
+  {
+    title: ["Physics becomes a ", "ฟิสิกส์กลายเป็น"],
+    accent: ["Space Mission", "ภารกิจอวกาศ"],
+    body: ["Solve real momentum problems to rescue spacecraft and unlock the secrets of the universe.", "แก้โจทย์โมเมนตัมจริงเพื่อกู้ภัยยานอวกาศ และไขความลับของจักรวาล"],
+    badge: ["star", ["LEVEL UP", "เลื่อนระดับ"]],
+    formula: "p = m × v",
+    chip: ["bolt", ["+250 XP", "+250 XP"]],
+  },
+  {
+    title: ["Learn by ", "เรียนรู้ด้วย"],
+    accent: ["doing", "การลงมือทำ"],
+    body: ["Set forces, burn times and collision types, then watch the simulation obey the laws of physics. Every mistake gets feedback aimed at the idea behind it.", "กำหนดแรง เวลาจุดเครื่องยนต์ และชนิดการชน แล้วดูการจำลองที่เป็นไปตามกฎฟิสิกส์ ทุกครั้งที่ตอบผิดจะได้คำแนะนำที่ตรงกับแนวคิดที่เข้าใจคลาดเคลื่อน"],
+    badge: ["flask", ["VIRTUAL LAB", "ห้องทดลองเสมือน"]],
+    formula: "J = F × Δt",
+    chip: ["bulb", ["HINTS", "คำใบ้"]],
+  },
+  {
+    title: ["A coach that ", "โค้ชที่"],
+    accent: ["adapts to you", "ปรับตามตัวคุณ"],
+    body: ["QEDify tracks what you master and where you slip, then tunes the difficulty and the support, with an AI coach for when you are stuck.", "QEDify ติดตามว่าคุณชำนาญเรื่องใดและพลาดตรงไหน แล้วปรับความยากและการช่วยเหลือให้เหมาะ พร้อมโค้ช AI ไว้ช่วยเมื่อคุณติดขัด"],
+    badge: ["robot", ["AI COACH", "โค้ช AI"]],
+    formula: "p_before = p_after",
+    chip: ["chart", ["ADAPTIVE", "ปรับตามผู้เรียน"]],
+  },
+];
 
-// Bottom panel height + bottom padding (fixed portion)
-const PANEL_DESIGN_H = 298.188 + 40;
-
-export default function OnboardingScreen() {
+export default function Onboarding() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const { state, dispatch } = useGame();
+  const L = useL();
+  const [i, setI] = useState(0);
+  const slide = SLIDES[i];
+  const last = i === SLIDES.length - 1;
 
-  // Actual illustration section height at runtime
-  const illustrationH = H - insets.top - insets.bottom - sh(PANEL_DESIGN_H);
-  const centerX = W / 2;
-  const worldW = sw(419);
-  const worldH = sw(228);
-  const glowSize = sw(120);
-  const rocketW = sw(74);
-  const rocketH = sw(107);
-
-  // Converts design-space y (relative to 413.812px illustration) to pixels
-  const ip = (n: number) => (n / 413.812) * illustrationH;
-
-  const pos = {
-    worldTop: ip(108),
-    worldLeft: centerX - worldW / 2,
-    glowTop: ip(161.91),
-    glowLeft: centerX - glowSize / 2,
-    levelUpTop: ip(101.91),
-    levelUpLeft: centerX - sw(130),
-    rocketTop: ip(84),
-    rocketLeft: centerX + sw(21),
-    formulaTop: ip(287.91),
-    formulaLeft: centerX - sw(110),
-    xpTop: ip(315.91),
-    xpLeft: centerX + sw(58),
+  const finish = () => {
+    dispatch({ type: "onboarded" });
+    router.replace(href(state.profile ? "/home" : "/register"));
   };
 
   return (
-    <SafeAreaView style={s.container} edges={["top", "bottom"]}>
-      <StatusBar style="light" />
+    <Screen>
+      <Seo
+        title={L("How QEDify works", "QEDify ทำงานอย่างไร")}
+        description={L("A three-step tour of QEDify: physics as space missions, learning by doing, and a coach that adapts to you.", "ทัวร์สามขั้นของ QEDify: ฟิสิกส์ในรูปภารกิจอวกาศ การเรียนรู้ด้วยการลงมือทำ และโค้ชที่ปรับตามตัวคุณ")}
+        path="/onboarding"
+      />
+      <SafeAreaView style={s.safe} edges={["top", "bottom"]}>
+        <View role="main" style={s.col}>
+          <View style={s.art} aria-hidden>
+            <Starfield count={16} />
+            <Planet size={230} />
+            <View style={s.rocket}>
+              <RocketHero size={58} />
+            </View>
+            <FadeSlideIn key={`b${i}`} delay={60} style={[s.chip, s.badge]}>
+              <Icon name={slide.badge[0]} size={14} color={C.cyan} />
+              <Text style={s.chipText}>{L(...slide.badge[1])}</Text>
+            </FadeSlideIn>
+            <FadeSlideIn key={`f${i}`} delay={140} style={s.formula}>
+              <Text style={s.formulaText}>{slide.formula}</Text>
+            </FadeSlideIn>
+            <FadeSlideIn key={`c${i}`} delay={220} style={[s.chip, s.xp]}>
+              <Icon name={slide.chip[0]} size={13} color={C.teal} />
+              <Text style={[s.chipText, { color: C.teal }]}>{L(...slide.chip[1])}</Text>
+            </FadeSlideIn>
+          </View>
 
-      <View style={s.illustration}>
-        <View
-          style={[
-            s.globeGlow,
-            {
-              top: pos.glowTop,
-              left: pos.glowLeft,
-              width: glowSize,
-              height: glowSize,
-              borderRadius: glowSize / 2,
-            },
-          ]}
-        />
-        <Image
-          source={WORLD_IMG}
-          style={[
-            s.worldImage,
-            {
-              top: pos.worldTop,
-              left: pos.worldLeft,
-              width: worldW,
-              height: worldH,
-            },
-          ]}
-          resizeMode="cover"
-        />
-        <View style={[s.levelUpBadge, { top: pos.levelUpTop, left: pos.levelUpLeft }]}>
-          <Text style={s.levelUpText}>⭐ LEVEL UP</Text>
-        </View>
-        <Image
-          source={ROCKET_IMG}
-          style={[
-            s.rocketImage,
-            {
-              top: pos.rocketTop,
-              left: pos.rocketLeft,
-              width: rocketW,
-              height: rocketH,
-            },
-          ]}
-          resizeMode="contain"
-        />
-        <View style={[s.formulaWrap, { top: pos.formulaTop, left: pos.formulaLeft }]}>
-          <Text style={s.formulaText}>p = m x v</Text>
-        </View>
-        <View style={[s.xpBadge, { top: pos.xpTop, left: pos.xpLeft }]}>
-          <Text style={s.xpText}>+250 XP</Text>
-        </View>
-      </View>
+          <View style={s.panel}>
+            <Text style={s.kicker}>
+              {L("STEP", "ขั้นที่")} 0{i + 1} {L("OF", "จาก")} 0{SLIDES.length}
+            </Text>
+            <Text style={s.title} role="heading" aria-level={1}>
+              {L(...slide.title)}
+              <Text style={s.accent}>{L(...slide.accent)}</Text>
+            </Text>
+            <Text style={s.body}>{L(...slide.body)}</Text>
 
-      <View style={s.panel}>
-        <Text style={s.missionLabel}>MISSION 01 OF 03</Text>
-        <Text style={[s.title, { marginTop: sh(12) }]}>
-          {"Physics becomes a "}
-          <Text style={s.titleCyan}>Space Mission</Text>
-        </Text>
-        <Text style={[s.description, { marginTop: sh(12) }]}>
-          Solve real momentum problems to rescue spacecraft and unlock the
-          secrets of the universe.
-        </Text>
-        <View style={[s.dotsRow, { marginTop: sh(20) }]}>
-          <View style={[s.dot, s.dotActive]} />
-          <View style={[s.dot, s.dotInactive]} />
-          <View style={[s.dot, s.dotInactive]} />
+            <View style={s.dots}>
+              {SLIDES.map((_, k) => (
+                <Pressable key={k} onPress={() => setI(k)} hitSlop={12} accessibilityRole="button" accessibilityLabel={L(`Go to slide ${k + 1}`, `ไปที่สไลด์ ${k + 1}`)}>
+                  <View style={[s.dot, k === i ? s.dotOn : s.dotOff]} />
+                </Pressable>
+              ))}
+            </View>
+
+            <Btn label={last ? L("GET STARTED", "เริ่มเลย") : L("NEXT", "ถัดไป")} iconRight="arrow-right" onPress={() => (last ? finish() : setI(i + 1))} />
+            <Pressable onPress={finish} style={s.skip} accessibilityRole="button" disabled={last}>
+              <Text style={[s.skipText, last && { opacity: 0 }]}>{L("Skip intro", "ข้ามแนะนำ")}</Text>
+            </Pressable>
+          </View>
         </View>
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={() => router.replace("/login" as any)}
-          style={[s.nextOuter, { marginTop: sh(24) }]}
-        >
-          <LinearGradient
-            colors={["#00c8ff", "#0d4eaa"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-            style={s.nextBtn}
-          >
-            <Text style={s.nextBtnText}>NEXT →</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-        <TouchableOpacity
-          activeOpacity={0.7}
-          style={{ marginTop: sh(12) }}
-          onPress={() => router.replace("/login" as any)}
-        >
-          <Text style={s.footerText}>
-            Already have an account? <Text style={s.footerLink}>LOG IN</Text>
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </Screen>
   );
 }
 
-type Styles = {
-  container: ViewStyle;
-  illustration: ViewStyle;
-  worldImage: ImageStyle;
-  globeGlow: ViewStyle;
-  levelUpBadge: ViewStyle;
-  levelUpText: TextStyle;
-  rocketImage: ImageStyle;
-  formulaWrap: ViewStyle;
-  formulaText: TextStyle;
-  xpBadge: ViewStyle;
-  xpText: TextStyle;
-  panel: ViewStyle;
-  missionLabel: TextStyle;
-  title: TextStyle;
-  titleCyan: TextStyle;
-  description: TextStyle;
-  dotsRow: ViewStyle;
-  dot: ViewStyle;
-  dotActive: ViewStyle;
-  dotInactive: ViewStyle;
-  nextOuter: ViewStyle;
-  nextBtn: ViewStyle;
-  nextBtnText: TextStyle;
-  footerText: TextStyle;
-  footerLink: TextStyle;
-};
-
-const s = StyleSheet.create<Styles>({
-  container: { flex: 1, backgroundColor: "#060d1e" },
-
-  illustration: { flex: 1, overflow: "hidden" },
-
-  worldImage: { position: "absolute" },
-
-  globeGlow: {
+// Fixed sizes on purpose: this page is pre-rendered, so nothing may depend on the measured window.
+const s = StyleSheet.create({
+  safe: { flex: 1, alignItems: "center" },
+  col: { flex: 1, width: "100%", maxWidth: 520 },
+  art: { flex: 1, minHeight: 220, overflow: "hidden", alignItems: "center", justifyContent: "center" },
+  rocket: { position: "absolute", top: "12%", right: "20%", transform: [{ rotate: "30deg" }] },
+  chip: {
     position: "absolute",
-    backgroundColor: "#0a4a9e",
-    shadowColor: "#00c8ff",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: sw(40),
-    elevation: 6,
-  },
-
-  levelUpBadge: {
-    position: "absolute",
-    height: sw(36),
-    paddingHorizontal: sw(16),
-    justifyContent: "center",
-    backgroundColor: "rgba(0,200,255,0.1)",
-    borderWidth: 1,
-    borderColor: "#00c8ff",
-    borderRadius: sw(12),
-    shadowColor: "#00c8ff",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: sw(12),
-    elevation: 8,
-  },
-  levelUpText: {
-    fontFamily: Platform.OS === "ios" ? "Courier New" : "monospace",
-    fontSize: sw(13),
-    color: "#00c8ff",
-  },
-
-  rocketImage: {
-    position: "absolute",
-  },
-
-  formulaWrap: { position: "absolute" },
-  formulaText: {
-    fontFamily: Platform.OS === "ios" ? "Courier New" : "monospace",
-    fontSize: sw(12),
-    color: "#00c8ff",
-  },
-
-  xpBadge: {
-    position: "absolute",
-    paddingHorizontal: sw(13),
-    paddingVertical: sw(7),
-    backgroundColor: "rgba(0,255,213,0.08)",
-    borderWidth: 1,
-    borderColor: "#00ffd5",
-    borderRadius: sw(10),
-  },
-  xpText: {
-    fontFamily: Platform.OS === "ios" ? "Courier New" : "monospace",
-    fontSize: sw(11),
-    color: "#00ffd5",
-  },
-
-  panel: {
-    paddingLeft: sw(28),
-    paddingRight: sw(28),
-    paddingBottom: sh(40),
-  },
-
-  missionLabel: {
-    fontFamily: Platform.OS === "ios" ? "Courier New" : "monospace",
-    fontSize: sw(11),
-    color: "#00c8ff",
-    letterSpacing: sw(3),
-  },
-
-  title: {
-    fontSize: sw(26),
-    fontWeight: "800",
-    color: "#e8f4ff",
-    lineHeight: sw(33.8),
-  },
-  titleCyan: { color: "#00c8ff" },
-
-  description: {
-    fontSize: sw(14),
-    color: "#8899aa",
-    lineHeight: sw(23.8),
-  },
-
-  dotsRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  dot: { height: 8, borderRadius: 4 },
-  dotActive: {
-    width: 24,
-    backgroundColor: "#00c8ff",
-    shadowColor: "#00c8ff",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  dotInactive: { width: 8, backgroundColor: "rgba(0,200,255,0.25)" },
-
-  nextOuter: {
-    borderRadius: sw(12),
-    overflow: "hidden",
-    shadowColor: "#00c8ff",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: sw(28),
-    elevation: 10,
-  },
-  nextBtn: {
-    height: sh(47),
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    borderRadius: sw(12),
+    gap: 6,
+    paddingHorizontal: 12,
+    height: 34,
+    borderRadius: 11,
+    borderWidth: 1,
+    backgroundColor: "rgba(6,13,31,0.8)",
   },
-  nextBtnText: {
-    fontSize: sw(14),
-    fontWeight: "bold",
-    color: "#ffffff",
-    letterSpacing: sw(1),
-  },
+  badge: { top: "14%", left: "9%", borderColor: C.cyan, boxShadow: "0 0 12px rgba(0,200,255,0.45)" },
+  xp: { bottom: "9%", right: "10%", borderColor: C.teal },
+  chipText: { fontFamily: MONO, fontSize: 12, color: C.cyan },
+  formula: { position: "absolute", bottom: "16%", left: "11%" },
+  formulaText: { fontFamily: MONO, fontSize: 13, color: C.cyan },
 
-  footerText: { fontSize: sw(12), color: "#8899aa", textAlign: "center" },
-  footerLink: { color: "#00c8ff" },
+  panel: { paddingHorizontal: 28, paddingBottom: 14 },
+  kicker: { fontFamily: MONO, fontSize: 11, color: C.cyan, letterSpacing: 3, marginBottom: 12 },
+  title: { fontSize: 27, fontWeight: "800", color: C.text, lineHeight: 35 },
+  accent: { color: C.cyan },
+  body: { fontSize: 14.5, color: C.muted, lineHeight: 23, marginTop: 12, minHeight: 92 },
+  dots: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 8, marginBottom: 20 },
+  dot: { height: 8, borderRadius: 4 },
+  dotOn: { width: 24, backgroundColor: C.cyan, boxShadow: "0 0 12px rgba(0,200,255,0.6)" },
+  dotOff: { width: 8, backgroundColor: "rgba(0,200,255,0.3)" },
+  skip: { alignItems: "center", paddingVertical: 14 },
+  skipText: { fontSize: 13, color: C.muted },
 });

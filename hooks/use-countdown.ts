@@ -1,33 +1,25 @@
 import { useEffect, useRef, useState } from "react";
 
 /**
- * Countdown timer hook.
- * @param initialSeconds - Total seconds to count down from.
- * @param onExpire - Called once when the timer reaches zero.
- * @returns { seconds, formatted } — remaining seconds and "MM:SS" string.
+ * Countdown that only ticks while `running` is true, so a mission clock can
+ * pause while the player reads feedback.
  */
-export function useCountdown(initialSeconds: number, onExpire?: () => void) {
-  const [seconds, setSeconds] = useState(initialSeconds);
-  const expiredRef = useRef(false);
+export function useCountdown(totalSeconds: number, running: boolean, onExpire: () => void) {
+  const [seconds, setSeconds] = useState(totalSeconds);
+  const expire = useRef(onExpire);
 
   useEffect(() => {
-    expiredRef.current = false;
-    const id = setInterval(() => {
-      setSeconds((prev) => {
-        if (prev <= 1) {
-          clearInterval(id);
-          if (!expiredRef.current) {
-            expiredRef.current = true;
-            onExpire?.();
-          }
-          return 0;
-        }
-        return prev - 1;
-      });
+    expire.current = onExpire;
+  });
+
+  useEffect(() => {
+    if (!running || seconds <= 0) return;
+    const id = setTimeout(() => {
+      setSeconds((s) => s - 1);
+      if (seconds === 1) expire.current();
     }, 1000);
-    return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    return () => clearTimeout(id);
+  }, [running, seconds]);
 
   const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
   const ss = String(seconds % 60).padStart(2, "0");

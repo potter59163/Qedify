@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#060d1f"/>
+      <stop offset="1" stop-color="#0a1c44"/>
+    </linearGradient>
+    <radialGradient id="ocean" cx="38%" cy="32%" r="75%">
+      <stop offset="0" stop-color="#3aa0ff"/>
+      <stop offset=".55" stop-color="#0d4eaa"/>
+      <stop offset="1" stop-color="#041a40"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset=".6" stop-color="#00c8ff" stop-opacity=".3"/>
+      <stop offset="1" stop-color="#00c8ff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <g fill="#e8f4ff">
+    <circle cx="90" cy="80" r="2"/><circle cx="240" cy="520" r="1.5"/><circle cx="420" cy="60" r="2.5"/>
+    <circle cx="610" cy="560" r="2"/><circle cx="700" cy="90" r="1.5"/><circle cx="1120" cy="70" r="2"/>
+    <circle cx="1150" cy="540" r="2.5"/><circle cx="60" cy="330" r="1.5"/><circle cx="560" cy="300" r="1.5"/>
+  </g>
+  <g transform="translate(900 315)">
+    <circle r="250" fill="url(#glow)"/>
+    <ellipse rx="250" ry="76" fill="none" stroke="#00c8ff" stroke-opacity=".35" stroke-width="2.5" transform="rotate(-18)"/>
+    <circle r="155" fill="url(#ocean)" stroke="#00c8ff" stroke-opacity=".6" stroke-width="3"/>
+    <g fill="#22d3a6" opacity=".9">
+      <path d="M-92-92c22-22 62-26 84-8 13 11 4 26-13 30-18 4-18 20-4 31 18 13 9 40-18 40-22 0-31-18-49-22-22-7-26-44 0-71z"/>
+      <path d="M26-4c18-13 49-13 66 4 18 18 13 49-9 66-18 13-22 35-44 40-22 4-35-18-26-40 7-18-4-26-4-44 0-11 7-20 17-26z"/>
+      <path d="M66-110c18-4 44 4 57 22-13 9-31 13-49 4-11-7-17-20-8-26z"/>
+    </g>
+    <g transform="translate(-205 -150) rotate(38)">
+      <path d="M0 62c-9-12-12-21-9-33h18c3 12 0 21-9 33z" fill="#ffa827"/>
+      <path d="M-19 12-36 30l18-3zM19 12l17 18-18-3z" fill="#ffa827"/>
+      <path d="M0-60c15 13 22 33 22 54 0 12-3 24-7 36h-30c-4-12-7-24-7-36 0-21 7-41 22-54z" fill="#dbeafe"/>
+      <circle cy="-12" r="10" fill="#0d2a55" stroke="#00c8ff" stroke-width="3"/>
+    </g>
+  </g>
+  <text x="80" y="270" font-family="Menlo, Consolas, monospace" font-size="118" font-weight="700" fill="#00eeff" letter-spacing="14">QEDify</text>
+  <text x="84" y="350" font-family="Helvetica, Arial, sans-serif" font-size="42" font-weight="700" fill="#e8f4ff">Learn momentum through</text>
+  <text x="84" y="404" font-family="Helvetica, Arial, sans-serif" font-size="42" font-weight="700" fill="#00c8ff">space rescue missions</text>
+  <text x="84" y="476" font-family="Menlo, Consolas, monospace" font-size="24" fill="#8899aa" letter-spacing="3">MOMENTUM · IMPULSE · COLLISIONS</text>
+</svg>

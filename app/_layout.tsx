@@ -1,106 +1,66 @@
-import {
-    DarkTheme,
-    DefaultTheme,
-    ThemeProvider,
-} from "@react-navigation/native";
-import {
-  getPhoneFrameHeight,
-  isDesktopWebViewport,
-  PHONE_FRAME_WIDTH,
-} from "@/constants/device-frame";
+import { DarkTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { StyleSheet, useWindowDimensions, View } from "react-native";
+import { useEffect } from "react";
+import { Platform, StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { C } from "@/constants/theme";
+import { useLang } from "@/lib/i18n";
+import { LayoutProvider, useWindowLayout } from "@/lib/layout";
+import { GameProvider } from "@/lib/store";
 
-export const unstable_settings = {
-  anchor: "splash",
+const theme = {
+  ...DarkTheme,
+  colors: { ...DarkTheme.colors, background: C.bg, card: C.bg, border: C.line, primary: C.cyan, text: C.text },
 };
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const { width, height } = useWindowDimensions();
-  const isDesktopWeb = isDesktopWebViewport(width);
-  const phoneHeight = getPhoneFrameHeight(height);
+/** Keeps <html lang> in step with the chosen language, for screen readers and browser translation prompts. */
+function DocumentLanguage() {
+  const lang = useLang();
+  useEffect(() => {
+    if (Platform.OS === "web") document.documentElement.lang = lang;
+  }, [lang]);
+  return null;
+}
 
-  const appNavigator = (
-    <Stack>
-      <Stack.Screen name="splash" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="onboarding"
-        options={{ headerShown: false, animation: "fade" }}
-      />
-      <Stack.Screen
-        name="login"
-        options={{ headerShown: false, animation: "slide_from_right" }}
-      />
-      <Stack.Screen
-        name="register"
-        options={{ headerShown: false, animation: "slide_from_right" }}
-      />
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="tutorial"
-        options={{ headerShown: false, animation: "slide_from_right" }}
-      />
-      <Stack.Screen
-        name="orbital-rescue"
-        options={{ headerShown: false, animation: "slide_from_right" }}
-      />
-      <Stack.Screen
-        name="the-junction"
-        options={{ headerShown: false, animation: "slide_from_right" }}
-      />
-      <Stack.Screen
-        name="results"
-        options={{ headerShown: false, animation: "slide_from_right" }}
-      />
-      <Stack.Screen
-        name="modal"
-        options={{ presentation: "modal", title: "Modal" }}
-      />
-    </Stack>
-  );
+export default function RootLayout() {
+  // Server render and hydration use a default phone layout; the real window
+  // size takes over right after, so the two renders always match.
+  const layout = useWindowLayout();
+
+  // Offline support: the production build ships a service worker (scripts/postbuild.js).
+  useEffect(() => {
+    if (Platform.OS !== "web" || process.env.NODE_ENV !== "production") return;
+    if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return;
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  }, []);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        {isDesktopWeb ? (
-          <View style={styles.desktopStage}>
-            <View style={[styles.phoneFrame, { height: phoneHeight }]}>{appNavigator}</View>
-          </View>
-        ) : (
-          appNavigator
-        )}
-        <StatusBar style="light" />
-      </ThemeProvider>
+    <GestureHandlerRootView style={styles.root}>
+      <GameProvider>
+        <DocumentLanguage />
+        <LayoutProvider value={layout}>
+          <ThemeProvider value={theme}>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                animation: "slide_from_right",
+                contentStyle: { backgroundColor: C.bg },
+              }}
+            >
+              <Stack.Screen name="index" options={{ animation: "fade" }} />
+              <Stack.Screen name="th" options={{ animation: "fade" }} />
+              <Stack.Screen name="onboarding" options={{ animation: "fade" }} />
+              <Stack.Screen name="(game)" options={{ animation: "fade" }} />
+            </Stack>
+          </ThemeProvider>
+        </LayoutProvider>
+      </GameProvider>
     </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
-  desktopStage: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#0a1020",
-    paddingVertical: 24,
-  },
-  phoneFrame: {
-    width: PHONE_FRAME_WIDTH,
-    maxWidth: "92%",
-    borderRadius: 40,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
-    backgroundColor: "#010409",
-    shadowColor: "#000",
-    shadowOpacity: 0.35,
-    shadowRadius: 28,
-    shadowOffset: { width: 0, height: 16 },
-    elevation: 12,
-  },
+  root: { flex: 1, backgroundColor: C.bg },
 });

@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /home
+Disallow: /chapters
+Disallow: /ranks
+Disallow: /profile
+Disallow: /settings
+Disallow: /results
+Disallow: /mission/
+
+Sitemap: https://qedify.vercel.app/sitemap.xml
