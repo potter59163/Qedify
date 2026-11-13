@@ -37,10 +37,15 @@ export function Text({ style, children, ...rest }: TextProps) {
     );
   }
   const flat = StyleSheet.flatten(style) ?? {};
-  const size = Math.max(typeof flat.fontSize === "number" ? flat.fontSize : 14, MIN_SIZE);
-  const thai: TextStyle = { fontFamily: THAI_FONT, letterSpacing: 0, fontSize: size };
-  // Thai needs more room between lines than Latin text of the same size.
-  if (typeof flat.lineHeight === "number") thai.lineHeight = Math.max(flat.lineHeight, Math.round(size * 1.5));
+  const thai: TextStyle = { fontFamily: THAI_FONT, letterSpacing: 0 };
+  // Only a size given in pixels is raised. A nested Text with no size keeps
+  // inheriting its parent's, and a CSS size such as clamp() is left as it is.
+  if (typeof flat.fontSize === "number") {
+    const size = Math.max(flat.fontSize, MIN_SIZE);
+    thai.fontSize = size;
+    // Thai needs more room between lines than Latin text of the same size.
+    if (typeof flat.lineHeight === "number") thai.lineHeight = Math.max(flat.lineHeight, Math.round(size * 1.5));
+  }
   // A label that was set apart by letter-spacing is set apart by weight instead.
   if ((flat.letterSpacing ?? 0) >= 1 && !flat.fontWeight) thai.fontWeight = "600";
   return (
